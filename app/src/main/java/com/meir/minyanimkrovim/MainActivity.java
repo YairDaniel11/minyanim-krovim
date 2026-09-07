@@ -25,6 +25,8 @@ public class MainActivity extends Activity {
 
     private static final int REQUEST_CODE_OPEN_FILE = 1001;
     private static final int REQUEST_CODE_NOTIF_PERMISSION = 1002;
+    private static final int REQUEST_CODE_BROWSE_FILE = 1003;
+    private static final int REQUEST_CODE_STORAGE_PERMISSION = 1004;
     private static final long REFRESH_INTERVAL_MS = 30_000;
 
     private TextView tvDayType, tvNext, tvLast, tvEmpty;
@@ -83,11 +85,21 @@ public class MainActivity extends Activity {
     }
 
     private void openFilePicker() {
-        // ACTION_GET_CONTENT, בניגוד ל-ACTION_OPEN_DOCUMENT, לא דורש שאפליקציית
-        // מנהל הקבצים תממש Storage Access Framework - חלק ממנהלי הקבצים
-        // המובנים במכשירים ישנים/מותאמים (כגון MIUI ישן) לא תומכים ב-SAF,
-        // ואז ACTION_OPEN_DOCUMENT מציג רק אפליקציות ענן (Drive/Gmail) בלי
-        // אפשרות לבחור קובץ מקומי מהאחסון.
+        if (Build.VERSION.SDK_INT < 29 /* לפני scoped storage */) {
+            // במכשירים ישנים/מותאמים (כגון MIUI ישן) חלק ממנהלי הקבצים לא
+            // מממשים Storage Access Framework בכלל, ואז ACTION_OPEN_DOCUMENT/
+            // ACTION_GET_CONTENT מציגים רק אפליקציות ענן (Drive/Gmail) או
+            // קטגוריות מובנות מוגבלות (הורדות/תמונות/קול/וידאו) בלי אפשרות
+            // לעיין באחסון המקומי ולמצוא קובץ JSON שם. לכן, במכשירים כאלה
+            // (שעדיין לא כפופים ל-scoped storage) פותחים דפדפן קבצים פנימי
+            // שקורא ישירות מהאחסון החיצוני.
+            openInternalFileBrowser();
+        } else {
+            openSystemFilePicker();
+        }
+    }
+
+    private void openSystemFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // מאפשרים גם text/plain - חלק מהמכשירים לא מזהים application/json
@@ -100,20 +112,51 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void openInternalFileBrowser() {
+        if (Build.VERSION.SDK_INT >= 23 /* M - הרשאות בזמן ריצה */
+                && checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE},
+                    REQUEST_CODE_STORAGE_PERMISSION);
+            return;
+        }
+        startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
+            } else {
+                Toast.makeText(this, R.string.file_browser_permission_denied, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_OPEN_FILE && resultCode == Activity.RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri == null) return;
-            try {
-                MinyanDataStore.importFromUri(this, uri);
-                Toast.makeText(this, R.string.btn_load_file, Toast.LENGTH_SHORT).show();
-                refresh();
-            } catch (Exception e) {
-                String msg = getString(R.string.label_load_error, e.getMessage());
-                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-            }
+            importAndRefresh(uri);
+        } else if (requestCode == REQUEST_CODE_BROWSE_FILE && resultCode == Activity.RESULT_OK && data != null) {
+            String path = data.getStringExtra(FileBrowserActivity.EXTRA_SELECTED_PATH);
+            if (path == null) return;
+            importAndRefresh(Uri.fromFile(new java.io.File(path)));
+        }
+    }
+
+    private void importAndRefresh(Uri uri) {
+        try {
+            MinyanDataStore.importFromUri(this, uri);
+            Toast.makeText(this, R.string.btn_load_file, Toast.LENGTH_SHORT).show();
+            refresh();
+        } catch (Exception e) {
+            String msg = getString(R.string.label_load_error, e.getMessage());
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
         }
     }
 
