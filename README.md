@@ -6,13 +6,12 @@
 
 ## הרצה / בנייה
 
-הפרויקט נבנה עם Gradle סטנדרטי. כדי לבנות:
+הפרויקט נבנה עם Gradle סטנדרטי, וכולל Gradle Wrapper מוכן (`gradlew`,
+`gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`) - אין צורך להתקין
+Gradle בנפרד. כדי לבנות:
 
-1. פתחו את התיקייה ב-Android Studio - הוא ייצור אוטומטית את ה-Gradle
-   Wrapper החסר (`gradlew`, `gradle-wrapper.jar`) בסנכרון הראשון.
-   לחלופין, מריצים פעם אחת `gradle wrapper --gradle-version 8.7` מתוך
-   תיקיית הפרויקט אם יש Gradle מותקן מקומית.
-2. `./gradlew assembleDebug` - יוצר APK תחת
+1. פתחו את התיקייה ב-Android Studio ותנו לו לסנכרן, או
+2. הריצו `./gradlew assembleDebug` - יוצר APK תחת
    `app/build/outputs/apk/debug/`.
 3. שני קובצי ה-CI (`.github/workflows/build.yml` ו-`.gitlab-ci.yml`)
    בונים APK אוטומטית בכל push, ומעלים אותו כ-artifact להורדה.
