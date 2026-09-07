@@ -83,16 +83,18 @@ public class MainActivity extends Activity {
     }
 
     private void openFilePicker() {
-        Intent intent;
-        if (Build.VERSION.SDK_INT >= 19 /* KITKAT - ACTION_OPEN_DOCUMENT */) {
-            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-        } else {
-            intent = new Intent(Intent.ACTION_GET_CONTENT);
-        }
+        // ACTION_GET_CONTENT, בניגוד ל-ACTION_OPEN_DOCUMENT, לא דורש שאפליקציית
+        // מנהל הקבצים תממש Storage Access Framework - חלק ממנהלי הקבצים
+        // המובנים במכשירים ישנים/מותאמים (כגון MIUI ישן) לא תומכים ב-SAF,
+        // ואז ACTION_OPEN_DOCUMENT מציג רק אפליקציות ענן (Drive/Gmail) בלי
+        // אפשרות לבחור קובץ מקומי מהאחסון.
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // מאפשרים גם text/plain - חלק מהמכשירים לא מזהים application/json
         try {
-            startActivityForResult(intent, REQUEST_CODE_OPEN_FILE);
+            startActivityForResult(
+                    Intent.createChooser(intent, getString(R.string.btn_load_file)),
+                    REQUEST_CODE_OPEN_FILE);
         } catch (Exception e) {
             Toast.makeText(this, R.string.label_no_data, Toast.LENGTH_LONG).show();
         }
