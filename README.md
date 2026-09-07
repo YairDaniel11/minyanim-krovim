@@ -14,7 +14,9 @@ Gradle בנפרד. כדי לבנות:
 2. הריצו `./gradlew assembleDebug` - יוצר APK תחת
    `app/build/outputs/apk/debug/`.
 3. שני קובצי ה-CI (`.github/workflows/build.yml` ו-`.gitlab-ci.yml`)
-   בונים APK אוטומטית בכל push, ומעלים אותו כ-artifact להורדה.
+   בונים APK אוטומטית בכל push. ה-GitHub Action גם מפרסם אותו כ-GitHub
+   Release קבוע (בעמוד ["Releases"](../../releases), תגית `build-<מספר
+   ריצה>`) - אין צורך להתחבר או להמתין ל-artifact זמני כדי להוריד APK.
 
 ## פורמט קובץ הנתונים (JSON)
 
@@ -61,3 +63,18 @@ Gradle בנפרד. כדי לבנות:
 מומלץ ללחוץ גם על הכפתור "ביטול חיסכון בסוללה" במסך ההגדרות - חלק
 מהיצרנים (Xiaomi/MIUI, Samsung ועוד) עלולים להשהות התראות מתוזמנות בלי
 זה, גם עם כל שאר ההגנות תקינות.
+
+## יומן שינויים (Changelog)
+
+### עדכון: תיקון בניית ה-CI ופרסום APK ל-Releases
+- **Gradle Wrapper חסר**: `gradlew`/`gradlew.bat`/`gradle/wrapper/gradle-wrapper.jar`
+  מעולם לא הועלו לריפו, למרות ששני קובצי ה-CI (`build.yml` ו-`.gitlab-ci.yml`)
+  קוראים ל-`./gradlew` ישירות - כל build (כולל הרצה ידנית) נכשל מיידית
+  עם "No such file or directory". נוספו הקבצים החסרים.
+- **פרסום APK ל-Releases**: בעבר ה-APK היה זמין רק כ-Actions artifact זמני
+  (דורש התחברות ל-GitHub, פג אחרי 30 יום). עכשיו כל push ל-`main` יוצר גם
+  GitHub Release קבוע עם תגית ייחודית (`build-<מספר ריצה>`), כך שאפשר
+  להוריד APK בכל שלב מעמוד ה-Releases בלי התחברות.
+- `versionCode`/`versionName` מתעדכנים אוטומטית לפי מספר ריצת ה-CI (במקום
+  להישאר קבועים על `1`/`"1.0"`), כך שכל APK שיוצא מקבל מספר גרסה חדש
+  ועולה בלי עריכה ידנית של `app/build.gradle`.

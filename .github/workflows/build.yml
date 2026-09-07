@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,9 +34,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Bump versionCode to run number
+      - name: Bump version (versionCode/versionName)
         run: |
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.${{ github.run_number }}\"/" app/build.gradle
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -46,3 +50,15 @@ jobs:
         with:
           name: minyanim-krovim-debug
           path: app/build/outputs/apk/debug/*.apk
+
+      - name: Create GitHub Release with APK
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "מניינים קרובים - build #${{ github.run_number }}"
+          body: |
+            APK דיבאג שנבנה אוטומטית מקומיט ${{ github.sha }}.
+            גרסה: versionCode ${{ github.run_number }}.
+            לא APK חתום ל-release רשמי (release חתום דורש keystore נפרד).
+          files: app/build/outputs/apk/debug/*.apk

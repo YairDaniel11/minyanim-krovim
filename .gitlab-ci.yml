@@ -27,6 +27,7 @@ build_apk:
   stage: build
   script:
     - sed -i "s/versionCode [0-9]*/versionCode ${CI_PIPELINE_IID}/" app/build.gradle
+    - sed -i "s/versionName \"[^\"]*\"/versionName \"1.${CI_PIPELINE_IID}\"/" app/build.gradle
     - ./gradlew assembleDebug --no-daemon
   artifacts:
     paths:
