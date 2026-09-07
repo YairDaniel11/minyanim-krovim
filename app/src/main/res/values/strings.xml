@@ -7,22 +7,55 @@
     <string name="btn_settings">הגדרות</string>
     <string name="btn_refresh">רענון</string>
 
-    <string name="label_no_data">לא נטען קובץ מניינים. לחצו על "טעינת קובץ מניינים" כדי לבחור קובץ JSON.</string>
+    <string name="label_no_data">לא נטען קובץ מניינים. היכנסו ל"הגדרות" כדי לבחור קובץ JSON.</string>
     <string name="label_load_error">שגיאה בטעינת הקובץ: %1$s</string>
-    <string name="label_day_type_shabbat">היום: שבת</string>
-    <string name="label_day_type_weekday">היום: יום חול</string>
 
     <string name="label_next_minyan_title">המניין הקרוב</string>
     <string name="label_last_minyan_title">המניין האחרון שהתחיל</string>
     <string name="label_all_minyanim_title">כל המניינים היום</string>
+    <string name="label_all_minyanim_title_for_day">כל המניינים - %1$s</string>
 
     <string name="starts_now">מתחיל ממש עכשיו</string>
     <string name="starts_in_minutes">עוד %1$d דקות</string>
     <string name="starts_in_one_minute">עוד דקה</string>
+    <string name="starts_in_one_hour">עוד שעה</string>
+    <string name="starts_in_one_hour_one_minute">עוד שעה ודקה</string>
+    <string name="starts_in_one_hour_minutes">עוד שעה ו-%1$d דקות</string>
+    <string name="starts_in_hours">עוד %1$d שעות</string>
+    <string name="starts_in_hours_one_minute">עוד %1$d שעות ודקה</string>
+    <string name="starts_in_hours_minutes">עוד %1$d שעות ו-%2$d דקות</string>
+
     <string name="started_minutes_ago">התחיל לפני %1$d דקות</string>
     <string name="started_one_minute_ago">התחיל לפני דקה</string>
-    <string name="no_next_minyan">אין עוד מניין היום</string>
-    <string name="no_last_minyan">עדיין לא התחיל אף מניין היום</string>
+    <string name="started_one_hour_ago">התחיל לפני שעה</string>
+    <string name="started_one_hour_one_minute_ago">התחיל לפני שעה ודקה</string>
+    <string name="started_one_hour_minutes_ago">התחיל לפני שעה ו-%1$d דקות</string>
+    <string name="started_hours_ago">התחיל לפני %1$d שעות</string>
+    <string name="started_hours_one_minute_ago">התחיל לפני %1$d שעות ודקה</string>
+    <string name="started_hours_minutes_ago">התחיל לפני %1$d שעות ו-%2$d דקות</string>
+
+    <string name="no_next_minyan">אין עוד מניין</string>
+    <string name="no_last_minyan">עדיין לא התחיל אף מניין</string>
+
+    <string-array name="day_letters">
+        <item>א</item>
+        <item>ב</item>
+        <item>ג</item>
+        <item>ד</item>
+        <item>ה</item>
+        <item>ו</item>
+        <item>שבת</item>
+    </string-array>
+
+    <string-array name="day_full_names">
+        <item>יום ראשון</item>
+        <item>יום שני</item>
+        <item>יום שלישי</item>
+        <item>יום רביעי</item>
+        <item>יום חמישי</item>
+        <item>יום שישי</item>
+        <item>שבת</item>
+    </string-array>
 
     <string name="prayer_shacharit">שחרית</string>
     <string name="prayer_mincha">מנחה</string>
@@ -34,6 +67,12 @@
     <string name="settings_enable_arvit">התראת ערבית</string>
     <string name="settings_set_time">קביעת שעת התראה</string>
     <string name="settings_ignore_battery">ביטול חיסכון בסוללה עבור האפליקציה (מומלץ להתראות אמינות)</string>
+
+    <string name="settings_data_header">קובץ מניינים</string>
+    <string name="settings_theme_header">ערכת נושא</string>
+    <string name="theme_system">לפי המכשיר</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
 
     <string name="notif_channel_name">התראות מניינים</string>
     <string name="notif_title_prefix">מניין קרוב</string>

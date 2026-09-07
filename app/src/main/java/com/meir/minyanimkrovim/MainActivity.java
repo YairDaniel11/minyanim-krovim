@@ -3,7 +3,6 @@ package com.meir.minyanimkrovim;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,9 +12,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,14 +22,19 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    private static final int REQUEST_CODE_OPEN_FILE = 1001;
     private static final int REQUEST_CODE_NOTIF_PERMISSION = 1002;
-    private static final int REQUEST_CODE_BROWSE_FILE = 1003;
-    private static final int REQUEST_CODE_STORAGE_PERMISSION = 1004;
     private static final long REFRESH_INTERVAL_MS = 30_000;
 
-    private TextView tvDayType, tvNext, tvLast, tvEmpty;
+    /** מניין שכבר התחיל עדיין "רלוונטי" עד כמה דקות לאחר תחילתו, לפי סוג התפילה. */
+    private static final int VISIBLE_AFTER_START_SHACHARIT = 30;
+    private static final int VISIBLE_AFTER_START_OTHER = 5;
+
+    private TextView tvLocation, tvNextTitle, tvNext, tvLastTitle, tvLast, tvAllTitle, tvEmpty;
+    private LinearLayout dayRow;
     private ListView listMinyanim;
+    private final List<Button> dayButtons = new ArrayList<>();
+    private int selectedDayOfWeek;
+
     private final Handler handler = new Handler();
     private final Runnable refreshRunnable = new Runnable() {
         @Override
@@ -46,20 +50,19 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tvDayType = (TextView) findViewById(R.id.tvDayType);
+        tvLocation = (TextView) findViewById(R.id.tvLocation);
+        tvNextTitle = (TextView) findViewById(R.id.tvNextTitle);
         tvNext = (TextView) findViewById(R.id.tvNext);
+        tvLastTitle = (TextView) findViewById(R.id.tvLastTitle);
         tvLast = (TextView) findViewById(R.id.tvLast);
+        tvAllTitle = (TextView) findViewById(R.id.tvAllTitle);
         tvEmpty = (TextView) findViewById(R.id.tvEmpty);
+        dayRow = (LinearLayout) findViewById(R.id.dayRow);
         listMinyanim = (ListView) findViewById(R.id.listMinyanim);
 
-        Button btnLoadFile = (Button) findViewById(R.id.btnLoadFile);
         Button btnSettings = (Button) findViewById(R.id.btnSettings);
         Button btnRefresh = (Button) findViewById(R.id.btnRefresh);
 
-        btnLoadFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) { openFilePicker(); }
-        });
         btnSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -71,6 +74,8 @@ public class MainActivity extends Activity {
             public void onClick(View v) { refresh(); }
         });
 
+        selectedDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+        buildDayRow();
         requestNotificationPermissionIfNeeded();
     }
 
@@ -84,79 +89,47 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void openFilePicker() {
-        if (Build.VERSION.SDK_INT < 29 /* לפני scoped storage */) {
-            // במכשירים ישנים/מותאמים (כגון MIUI ישן) חלק ממנהלי הקבצים לא
-            // מממשים Storage Access Framework בכלל, ואז ACTION_OPEN_DOCUMENT/
-            // ACTION_GET_CONTENT מציגים רק אפליקציות ענן (Drive/Gmail) או
-            // קטגוריות מובנות מוגבלות (הורדות/תמונות/קול/וידאו) בלי אפשרות
-            // לעיין באחסון המקומי ולמצוא קובץ JSON שם. לכן, במכשירים כאלה
-            // (שעדיין לא כפופים ל-scoped storage) פותחים דפדפן קבצים פנימי
-            // שקורא ישירות מהאחסון החיצוני.
-            openInternalFileBrowser();
-        } else {
-            openSystemFilePicker();
+    /** בונה שורת 7 כפתורי יום (א ב ג ד ה ו שבת) למעבר בין ימי השבוע. */
+    private void buildDayRow() {
+        String[] letters = getResources().getStringArray(R.array.day_letters);
+        dayRow.removeAllViews();
+        dayButtons.clear();
+        for (int i = 0; i < 7; i++) {
+            final int calendarDow = i + 1; // Calendar.SUNDAY == 1
+            Button b = new Button(this);
+            b.setText(letters[i]);
+            b.setTextSize(13);
+            b.setPadding(4, 8, 4, 8);
+            b.setAllCaps(false);
+            b.setBackgroundResource(R.drawable.bg_round_button);
+            b.setTextColor(0xFFFFFFFF);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            lp.setMargins(2, 0, 2, 0);
+            b.setLayoutParams(lp);
+            b.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectedDayOfWeek = calendarDow;
+                    refresh();
+                }
+            });
+            dayRow.addView(b);
+            dayButtons.add(b);
         }
+        updateDaySelectionColors();
     }
 
-    private void openSystemFilePicker() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*"); // מאפשרים גם text/plain - חלק מהמכשירים לא מזהים application/json
-        try {
-            startActivityForResult(
-                    Intent.createChooser(intent, getString(R.string.btn_load_file)),
-                    REQUEST_CODE_OPEN_FILE);
-        } catch (Exception e) {
-            Toast.makeText(this, R.string.label_no_data, Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void openInternalFileBrowser() {
-        if (Build.VERSION.SDK_INT >= 23 /* M - הרשאות בזמן ריצה */
-                && checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_CODE_STORAGE_PERMISSION);
-            return;
-        }
-        startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
-            } else {
-                Toast.makeText(this, R.string.file_browser_permission_denied, Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_OPEN_FILE && resultCode == Activity.RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri == null) return;
-            importAndRefresh(uri);
-        } else if (requestCode == REQUEST_CODE_BROWSE_FILE && resultCode == Activity.RESULT_OK && data != null) {
-            String path = data.getStringExtra(FileBrowserActivity.EXTRA_SELECTED_PATH);
-            if (path == null) return;
-            importAndRefresh(Uri.fromFile(new java.io.File(path)));
-        }
-    }
-
-    private void importAndRefresh(Uri uri) {
-        try {
-            MinyanDataStore.importFromUri(this, uri);
-            Toast.makeText(this, R.string.btn_load_file, Toast.LENGTH_SHORT).show();
-            refresh();
-        } catch (Exception e) {
-            String msg = getString(R.string.label_load_error, e.getMessage());
-            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    private void updateDaySelectionColors() {
+        int accent = resolveAttrColor(R.attr.colorAccent);
+        int card = resolveAttrColor(R.attr.colorBgCard);
+        int mainText = resolveAttrColor(R.attr.colorTextMain);
+        for (int i = 0; i < dayButtons.size(); i++) {
+            boolean selected = (i + 1) == selectedDayOfWeek;
+            Button b = dayButtons.get(i);
+            b.getBackground().mutate().setColorFilter(selected ? accent : card,
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            b.setTextColor(selected ? 0xFFFFFFFF : mainText);
         }
     }
 
@@ -173,12 +146,18 @@ public class MainActivity extends Activity {
     }
 
     private void refresh() {
+        updateDaySelectionColors();
+
+        String location = MinyanDataStore.loadLocation(this);
+        if (location.length() > 0) {
+            tvLocation.setVisibility(View.VISIBLE);
+            tvLocation.setText(location);
+        } else {
+            tvLocation.setVisibility(View.GONE);
+        }
+
         if (!MinyanDataStore.hasData(this)) {
-            tvEmpty.setVisibility(View.VISIBLE);
-            listMinyanim.setVisibility(View.GONE);
-            tvNext.setText("");
-            tvLast.setText("");
-            tvDayType.setText("");
+            showEmpty(getString(R.string.label_no_data));
             return;
         }
 
@@ -186,58 +165,112 @@ public class MainActivity extends Activity {
         try {
             all = MinyanDataStore.loadAll(this);
         } catch (Exception e) {
-            tvEmpty.setVisibility(View.VISIBLE);
-            tvEmpty.setText(getString(R.string.label_load_error, e.getMessage()));
-            listMinyanim.setVisibility(View.GONE);
+            showEmpty(getString(R.string.label_load_error, e.getMessage()));
             return;
         }
 
-        tvEmpty.setVisibility(View.GONE);
-        listMinyanim.setVisibility(View.VISIBLE);
-
         Calendar now = Calendar.getInstance();
-        String dayType = MinyanDataStore.currentDayType(now);
+        boolean isToday = selectedDayOfWeek == now.get(Calendar.DAY_OF_WEEK);
+        String dayType = MinyanDataStore.dayTypeForDayOfWeek(selectedDayOfWeek);
         int nowMinutes = MinyanDataStore.currentMinutesOfDay(now);
 
-        tvDayType.setText(dayType.equals("shabbat")
-                ? getString(R.string.label_day_type_shabbat)
-                : getString(R.string.label_day_type_weekday));
+        List<MinyanEntry> dayEntries = MinyanDataStore.filterAndSortForToday(all, dayType);
+        tvAllTitle.setVisibility(View.VISIBLE);
 
-        List<MinyanEntry> today = MinyanDataStore.filterAndSortForToday(all, dayType);
-        MinyanEntry next = MinyanDataStore.findNext(today, nowMinutes);
-        MinyanEntry last = MinyanDataStore.findLast(today, nowMinutes);
+        if (isToday) {
+            tvNextTitle.setVisibility(View.VISIBLE);
+            tvNext.setVisibility(View.VISIBLE);
+            tvLastTitle.setVisibility(View.VISIBLE);
+            tvLast.setVisibility(View.VISIBLE);
+            tvAllTitle.setText(R.string.label_all_minyanim_title);
 
-        if (next != null) {
-            tvNext.setText(getString(R.string.label_next_minyan_title) + ":\n"
-                    + next.shulName + " (" + next.nusach + ") - " + next.prayerLabel(this)
-                    + " - " + statusLine(next, nowMinutes));
+            MinyanEntry next = MinyanDataStore.findNext(dayEntries, nowMinutes);
+            MinyanEntry last = MinyanDataStore.findLast(dayEntries, nowMinutes);
+
+            tvNext.setText(next != null
+                    ? describeEntry(next) + " - " + statusLine(next, nowMinutes)
+                    : getString(R.string.no_next_minyan));
+            tvLast.setText(last != null
+                    ? describeEntry(last) + " - " + statusLine(last, nowMinutes)
+                    : getString(R.string.no_last_minyan));
+
+            dayEntries = filterVisibleForNow(dayEntries, nowMinutes);
         } else {
-            tvNext.setText(getString(R.string.label_next_minyan_title) + ":\n"
-                    + getString(R.string.no_next_minyan));
+            tvNextTitle.setVisibility(View.GONE);
+            tvNext.setVisibility(View.GONE);
+            tvLastTitle.setVisibility(View.GONE);
+            tvLast.setVisibility(View.GONE);
+            String[] dayNames = getResources().getStringArray(R.array.day_full_names);
+            tvAllTitle.setText(getString(R.string.label_all_minyanim_title_for_day,
+                    dayNames[selectedDayOfWeek - 1]));
         }
 
-        if (last != null) {
-            tvLast.setText(getString(R.string.label_last_minyan_title) + ":\n"
-                    + last.shulName + " (" + last.nusach + ") - " + last.prayerLabel(this)
-                    + " - " + statusLine(last, nowMinutes));
+        if (dayEntries.isEmpty()) {
+            showEmptyList();
         } else {
-            tvLast.setText(getString(R.string.label_last_minyan_title) + ":\n"
-                    + getString(R.string.no_last_minyan));
+            tvEmpty.setVisibility(View.GONE);
+            listMinyanim.setVisibility(View.VISIBLE);
+            listMinyanim.setAdapter(new MinyanAdapter(this, dayEntries, nowMinutes,
+                    isToday ? MinyanDataStore.findNext(dayEntries, nowMinutes) : null));
         }
+    }
 
-        listMinyanim.setAdapter(new MinyanAdapter(this, today, nowMinutes, next));
+    /** מדלג על מניינים שהתחילו כבר מזמן (לא רלוונטיים יותר) - שחרית עד 30 דקות אחרי, מנחה/ערבית עד 5. */
+    private List<MinyanEntry> filterVisibleForNow(List<MinyanEntry> sortedToday, int nowMinutes) {
+        List<MinyanEntry> visible = new ArrayList<>();
+        for (MinyanEntry e : sortedToday) {
+            if (e.minutesOfDay >= nowMinutes) {
+                visible.add(e);
+                continue;
+            }
+            int agoMinutes = nowMinutes - e.minutesOfDay;
+            int threshold = "shacharit".equals(e.prayerType)
+                    ? VISIBLE_AFTER_START_SHACHARIT : VISIBLE_AFTER_START_OTHER;
+            if (agoMinutes <= threshold) visible.add(e);
+        }
+        return visible;
+    }
+
+    private void showEmpty(String message) {
+        tvNextTitle.setVisibility(View.GONE);
+        tvNext.setVisibility(View.GONE);
+        tvLastTitle.setVisibility(View.GONE);
+        tvLast.setVisibility(View.GONE);
+        tvAllTitle.setVisibility(View.GONE);
+        tvEmpty.setText(message);
+        showEmptyList();
+    }
+
+    private void showEmptyList() {
+        listMinyanim.setVisibility(View.GONE);
+        tvEmpty.setVisibility(View.VISIBLE);
+    }
+
+    private String describeEntry(MinyanEntry entry) {
+        String nusachPart = entry.nusach.length() > 0 ? " (" + entry.nusach + ")" : "";
+        return entry.shulName + nusachPart + " - " + entry.prayerLabel(this) + " - " + entry.timeLabel();
     }
 
     private String statusLine(MinyanEntry entry, int nowMinutes) {
         int diff = entry.minutesOfDay - nowMinutes;
         if (diff == 0) return getString(R.string.starts_now);
-        if (diff > 0) {
-            return diff == 1 ? getString(R.string.starts_in_one_minute)
-                    : getString(R.string.starts_in_minutes, diff);
+        boolean future = diff > 0;
+        int total = Math.abs(diff);
+        int hours = total / 60;
+        int minutes = total % 60;
+
+        if (hours == 0) {
+            if (minutes == 1) return getString(future ? R.string.starts_in_one_minute : R.string.started_one_minute_ago);
+            return getString(future ? R.string.starts_in_minutes : R.string.started_minutes_ago, minutes);
         }
-        int ago = -diff;
-        return ago == 1 ? getString(R.string.started_one_minute_ago)
-                : getString(R.string.started_minutes_ago, ago);
+        if (hours == 1) {
+            if (minutes == 0) return getString(future ? R.string.starts_in_one_hour : R.string.started_one_hour_ago);
+            if (minutes == 1) return getString(future ? R.string.starts_in_one_hour_one_minute : R.string.started_one_hour_one_minute_ago);
+            return getString(future ? R.string.starts_in_one_hour_minutes : R.string.started_one_hour_minutes_ago, minutes);
+        }
+        if (minutes == 0) return getString(future ? R.string.starts_in_hours : R.string.started_hours_ago, hours);
+        if (minutes == 1) return getString(future ? R.string.starts_in_hours_one_minute : R.string.started_hours_one_minute_ago, hours);
+        return getString(future ? R.string.starts_in_hours_minutes : R.string.started_hours_minutes_ago, hours, minutes);
     }
 
     /** אדפטר פשוט לרשימת המניינים - מדגיש את המניין הקרוב ביותר. */
@@ -263,9 +296,9 @@ public class MainActivity extends Activity {
             TextView tvPrayer = (TextView) row.findViewById(R.id.tvPrayerLine);
             TextView tvStatus = (TextView) row.findViewById(R.id.tvStatusLine);
 
+            String nusachPart = entry.nusach.length() > 0 ? entry.nusach + " | " : "";
             tvName.setText(entry.shulName);
-            tvPrayer.setText(entry.nusach + " | " + entry.prayerLabel(MainActivity.this)
-                    + " | " + entry.timeLabel());
+            tvPrayer.setText(nusachPart + entry.prayerLabel(MainActivity.this) + " | " + entry.timeLabel());
             tvStatus.setText(statusLine(entry, nowMinutes));
 
             int cardColor = resolveAttrColor(R.attr.colorBgCard);

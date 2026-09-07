@@ -83,7 +83,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (next == null) {
             text = context.getString(R.string.no_next_minyan);
         } else {
-            text = next.shulName + " (" + next.nusach + ") - " + next.timeLabel();
+            String nusachPart = next.nusach.length() > 0 ? " (" + next.nusach + ")" : "";
+            text = next.shulName + nusachPart + " - " + next.timeLabel();
         }
 
         Intent openIntent = new Intent(context, MainActivity.class);

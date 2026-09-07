@@ -24,6 +24,13 @@
   }
   h1 { font-size: 22px; margin-bottom: 4px; }
   p.subtitle { color: var(--text-dim); margin-top: 0; margin-bottom: 20px; font-size: 14px; }
+  .global-box {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
   .shul-card {
     background: var(--card);
     border: 1px solid var(--card-border);
@@ -48,6 +55,9 @@
     color: var(--text);
     font-size: 14px;
   }
+  .prayer-cell { display: flex; flex-direction: column; gap: 4px; }
+  .prayer-extra-label { font-size: 11px; margin-top: 4px; }
+  .prayer-extra-label input { font-size: 12px; padding: 6px; }
   .times-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -61,6 +71,7 @@
     margin-top: 10px;
   }
   .day-block h4 { margin: 0 0 6px 0; font-size: 13px; color: var(--accent); }
+  .day-block p.day-note { margin: 0 0 8px; font-size: 11px; color: var(--text-dim); }
   button {
     cursor: pointer;
     border: none;
@@ -113,6 +124,11 @@
   <button class="btn-import" onclick="importJsonFile()">טעינת הקובץ לעריכה</button>
 </div>
 
+<div class="global-box">
+  <label>שם המתחם/האזור (אופציונלי - יוצג ככותרת משנה באפליקציה)</label>
+  <input type="text" id="globalLocation" placeholder='לדוגמה: מתחם הסופרים'>
+</div>
+
 <div class="actions">
   <button class="btn-add" onclick="addShul()">+ הוספת בית כנסת</button>
 </div>
@@ -124,6 +140,39 @@
 
 <script>
 let shulCounter = 0;
+const PRAYERS = ['shacharit', 'mincha', 'arvit'];
+const PRAYER_LABELS = { shacharit: 'שחרית', mincha: 'מנחה', arvit: 'ערבית' };
+const DAYS = [
+  { prefix: 'wd', key: 'weekday', title: 'יום חול', note: '' },
+  { prefix: 'fr', key: 'friday', title: 'יום שישי', note: 'רק אם שונה מיום חול - שאר הימים ישתמשו ב"יום חול"' },
+  { prefix: 'sh', key: 'shabbat', title: 'שבת', note: '' },
+];
+const TIME_RE = /^\d{1,2}:\d{2}$/;
+
+function dayBlockHtml(day, id) {
+  const cells = PRAYERS.map(prayer => `
+    <div>
+      <label>${PRAYER_LABELS[prayer]}</label>
+      <div class="prayer-cell">
+        <input type="time" id="${day.prefix}-${prayer}-${id}">
+        <div class="prayer-extra-label">
+          <input type="text" id="${day.prefix}-${prayer}-label-${id}" placeholder="תיאור הלכתי (למשל נץ החמה)">
+        </div>
+        <div class="prayer-extra-label">
+          <input type="text" id="${day.prefix}-${prayer}-extra-${id}" placeholder="שעות נוספות, מופרדות בפסיק">
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="day-block">
+      <h4>${day.title}</h4>
+      ${day.note ? `<p class="day-note">${day.note}</p>` : ''}
+      <div class="times-grid">${cells}</div>
+    </div>
+  `;
+}
 
 function addShul(prefill) {
   shulCounter++;
@@ -144,31 +193,17 @@ function addShul(prefill) {
 
     <label>נוסח</label>
     <select id="nusach-${id}">
+      <option value="">לא צוין</option>
       <option value="אשכנז">אשכנז</option>
       <option value="ספרד">ספרד</option>
       <option value="עדות המזרח">עדות המזרח</option>
+      <option value="ליטאי">ליטאי</option>
       <option value="ע&quot;מ">ע"מ (ספרד/עדות המזרח מאוחד)</option>
       <option value="חב&quot;ד">חב"ד</option>
       <option value="אחר">אחר</option>
     </select>
 
-    <div class="day-block">
-      <h4>יום חול</h4>
-      <div class="times-grid">
-        <div><label>שחרית</label><input type="time" id="wd-shacharit-${id}"></div>
-        <div><label>מנחה</label><input type="time" id="wd-mincha-${id}"></div>
-        <div><label>ערבית</label><input type="time" id="wd-arvit-${id}"></div>
-      </div>
-    </div>
-
-    <div class="day-block">
-      <h4>שבת</h4>
-      <div class="times-grid">
-        <div><label>שחרית</label><input type="time" id="sh-shacharit-${id}"></div>
-        <div><label>מנחה</label><input type="time" id="sh-mincha-${id}"></div>
-        <div><label>ערבית</label><input type="time" id="sh-arvit-${id}"></div>
-      </div>
-    </div>
+    ${DAYS.map(day => dayBlockHtml(day, id)).join('')}
   `;
 
   container.appendChild(card);
@@ -188,18 +223,61 @@ function addShul(prefill) {
     if (nusachValue) nusachSelect.value = nusachValue;
 
     const prayers = prefill.prayers || {};
-    const weekday = prayers.weekday || {};
-    const shabbat = prayers.shabbat || {};
-    ['shacharit', 'mincha', 'arvit'].forEach(prayer => {
-      if (weekday[prayer]) document.getElementById('wd-' + prayer + '-' + id).value = weekday[prayer];
-      if (shabbat[prayer]) document.getElementById('sh-' + prayer + '-' + id).value = shabbat[prayer];
+    DAYS.forEach(day => {
+      const dayObj = prayers[day.key] || {};
+      PRAYERS.forEach(prayer => {
+        const parts = splitPrayerValue(dayObj[prayer]);
+        document.getElementById(`${day.prefix}-${prayer}-${id}`).value = parts.time;
+        document.getElementById(`${day.prefix}-${prayer}-label-${id}`).value = parts.label;
+        document.getElementById(`${day.prefix}-${prayer}-extra-${id}`).value = parts.extras.join(', ');
+      });
     });
   }
 }
 
-function removeShul(id) {
-  const card = document.getElementById('shul-' + id);
-  if (card) card.remove();
+/** מפרק ערך גולמי (מחרוזת/מערך/undefined) מתוך קובץ קיים לשלושת השדות בטופס. */
+function splitPrayerValue(raw) {
+  if (raw === undefined || raw === null) return { time: '', label: '', extras: [] };
+
+  const items = Array.isArray(raw) ? raw.map(String) : [String(raw)];
+  let time = '', label = '';
+  const extras = [];
+
+  items.forEach(item => {
+    if (TIME_RE.test(item)) {
+      if (!time) time = item; else extras.push(item);
+    } else {
+      if (!label) label = item; else extras.push(item);
+    }
+  });
+
+  return { time, label, extras };
+}
+
+/** בונה את הערך הגולמי (מחרוזת יחידה / מערך) לפרסום ב-JSON, מהפוך ל-splitPrayerValue. */
+function buildPrayerValue(prefix, id, prayer) {
+  const time = document.getElementById(`${prefix}-${prayer}-${id}`).value;
+  const label = document.getElementById(`${prefix}-${prayer}-label-${id}`).value.trim();
+  const extraRaw = document.getElementById(`${prefix}-${prayer}-extra-${id}`).value.trim();
+  const extras = extraRaw ? extraRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  const parts = [];
+  if (label) parts.push(label);
+  if (time) parts.push(time);
+  extras.forEach(e => parts.push(e));
+
+  if (parts.length === 0) return undefined;
+  if (parts.length === 1) return parts[0];
+  return parts;
+}
+
+function buildDayObject(prefix, id) {
+  const day = {};
+  PRAYERS.forEach(prayer => {
+    const value = buildPrayerValue(prefix, id, prayer);
+    if (value !== undefined) day[prayer] = value;
+  });
+  return day;
 }
 
 function buildData() {
@@ -212,24 +290,20 @@ function buildData() {
     const nusach = document.getElementById('nusach-' + id).value;
     if (!name) return; // מדלגים על כרטיסים בלי שם
 
-    const weekday = {};
-    const shabbat = {};
-
-    ['shacharit', 'mincha', 'arvit'].forEach(prayer => {
-      const wdVal = document.getElementById('wd-' + prayer + '-' + id).value;
-      const shVal = document.getElementById('sh-' + prayer + '-' + id).value;
-      if (wdVal) weekday[prayer] = wdVal;
-      if (shVal) shabbat[prayer] = shVal;
+    const prayers = {};
+    DAYS.forEach(day => {
+      const dayObj = buildDayObject(day.prefix, id);
+      if (Object.keys(dayObj).length > 0) prayers[day.key] = dayObj;
     });
 
-    const prayers = {};
-    if (Object.keys(weekday).length > 0) prayers.weekday = weekday;
-    if (Object.keys(shabbat).length > 0) prayers.shabbat = shabbat;
-
-    shuls.push({ name: name, nusach: nusach, prayers: prayers });
+    shuls.push({ name: name, nusach: nusach || null, prayers: prayers });
   });
 
-  return { shuls: shuls };
+  const data = {};
+  const location = document.getElementById('globalLocation').value.trim();
+  if (location) data.location = location;
+  data.shuls = shuls;
+  return data;
 }
 
 function downloadJson() {
@@ -284,6 +358,8 @@ function importJsonFile() {
       status.style.color = '#c0392b';
       return;
     }
+
+    document.getElementById('globalLocation').value = data.location || '';
 
     // מנקים את כל הכרטיסים הקיימים בטופס לפני טעינת הקובץ
     document.getElementById('shulsContainer').innerHTML = '';
