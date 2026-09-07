@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#121212</color>
+    <color name="bg_card_dark">#1E1E1E</color>
+    <color name="text_main_dark">#F5F5F5</color>
+    <color name="text_secondary_dark">#AAAAAA</color>
+
+    <color name="bg_light">#FAFAFA</color>
+    <color name="bg_card_light">#FFFFFF</color>
+    <color name="text_main_light">#202020</color>
+    <color name="text_secondary_light">#666666</color>
+
+    <color name="accent_teal">#00897B</color>
+    <color name="color_next">#2E7D32</color>
+</resources>

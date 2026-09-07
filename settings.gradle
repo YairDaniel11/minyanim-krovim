@@ -1,0 +1,2 @@
+rootProject.name = "minyanim-krovim"
+include ':app'

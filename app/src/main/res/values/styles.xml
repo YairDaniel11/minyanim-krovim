@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme">
+        <item name="colorAccent">@color/accent_teal</item>
+        <item name="colorNext">@color/color_next</item>
+    </style>
+
+    <style name="AppTheme.Dark" parent="AppTheme">
+        <item name="colorBgMain">@color/bg_dark</item>
+        <item name="colorBgCard">@color/bg_card_dark</item>
+        <item name="colorTextMain">@color/text_main_dark</item>
+        <item name="colorTextSecondary">@color/text_secondary_dark</item>
+        <item name="android:windowBackground">@color/bg_dark</item>
+    </style>
+
+    <style name="AppTheme.Light" parent="AppTheme">
+        <item name="colorBgMain">@color/bg_light</item>
+        <item name="colorBgCard">@color/bg_card_light</item>
+        <item name="colorTextMain">@color/text_main_light</item>
+        <item name="colorTextSecondary">@color/text_secondary_light</item>
+        <item name="android:windowBackground">@color/bg_light</item>
+    </style>
+</resources>

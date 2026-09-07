@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorBgMain"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="10dp">
+
+        <Button
+            android:id="@+id/btnLoadFile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_round_button"
+            android:textColor="#FFFFFF"
+            android:text="@string/btn_load_file"
+            android:nextFocusRight="@id/btnSettings"
+            android:nextFocusDown="@id/btnRefresh" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_round_button"
+            android:textColor="#FFFFFF"
+            android:text="@string/btn_settings"
+            android:nextFocusLeft="@id/btnLoadFile"
+            android:nextFocusDown="@id/btnRefresh" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_round_button"
+        android:textColor="#FFFFFF"
+        android:text="@string/btn_refresh"
+        android:layout_marginBottom="10dp"
+        android:nextFocusUp="@id/btnLoadFile"
+        android:nextFocusDown="@id/listMinyanim" />
+
+    <TextView
+        android:id="@+id/tvDayType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/colorTextMain"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvNext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/colorNext"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="10dp"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:id="@+id/tvLast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/colorTextSecondary"
+        android:textSize="15sp"
+        android:padding="6dp"
+        android:layout_marginBottom="10dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/label_all_minyanim_title"
+        android:textColor="?attr/colorTextMain"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <ListView
+        android:id="@+id/listMinyanim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:nextFocusUp="@id/btnRefresh"
+        android:divider="@null"
+        android:dividerHeight="4dp" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/label_no_data"
+        android:textColor="?attr/colorTextSecondary"
+        android:gravity="center"
+        android:padding="20dp"
+        android:visibility="gone" />
+
+</LinearLayout>

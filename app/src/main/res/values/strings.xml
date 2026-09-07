@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">מניינים קרובים</string>
+    <string name="settings_title">הגדרות והתראות</string>
+
+    <string name="btn_load_file">טעינת קובץ מניינים</string>
+    <string name="btn_settings">הגדרות</string>
+    <string name="btn_refresh">רענון</string>
+
+    <string name="label_no_data">לא נטען קובץ מניינים. לחצו על "טעינת קובץ מניינים" כדי לבחור קובץ JSON.</string>
+    <string name="label_load_error">שגיאה בטעינת הקובץ: %1$s</string>
+    <string name="label_day_type_shabbat">היום: שבת</string>
+    <string name="label_day_type_weekday">היום: יום חול</string>
+
+    <string name="label_next_minyan_title">המניין הקרוב</string>
+    <string name="label_last_minyan_title">המניין האחרון שהתחיל</string>
+    <string name="label_all_minyanim_title">כל המניינים היום</string>
+
+    <string name="starts_now">מתחיל ממש עכשיו</string>
+    <string name="starts_in_minutes">עוד %1$d דקות</string>
+    <string name="starts_in_one_minute">עוד דקה</string>
+    <string name="started_minutes_ago">התחיל לפני %1$d דקות</string>
+    <string name="started_one_minute_ago">התחיל לפני דקה</string>
+    <string name="no_next_minyan">אין עוד מניין היום</string>
+    <string name="no_last_minyan">עדיין לא התחיל אף מניין היום</string>
+
+    <string name="prayer_shacharit">שחרית</string>
+    <string name="prayer_mincha">מנחה</string>
+    <string name="prayer_arvit">ערבית</string>
+
+    <string name="settings_alarms_header">התראות לפי שעה</string>
+    <string name="settings_enable_shacharit">התראת שחרית</string>
+    <string name="settings_enable_mincha">התראת מנחה</string>
+    <string name="settings_enable_arvit">התראת ערבית</string>
+    <string name="settings_set_time">קביעת שעת התראה</string>
+    <string name="settings_ignore_battery">ביטול חיסכון בסוללה עבור האפליקציה (מומלץ להתראות אמינות)</string>
+
+    <string name="notif_channel_name">התראות מניינים</string>
+    <string name="notif_title_prefix">מניין קרוב</string>
+</resources>

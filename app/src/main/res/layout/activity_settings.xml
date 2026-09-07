@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorBgMain">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/settings_alarms_header"
+        android:textColor="?attr/colorTextMain"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:layout_marginBottom="10dp" />
+
+    <!-- שחרית -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="12dp">
+        <CheckBox android:id="@+id/cbShacharit"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/settings_enable_shacharit" android:textColor="?attr/colorTextMain"
+            android:nextFocusDown="@id/cbMincha" />
+        <Button android:id="@+id/btnTimeShacharit"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
+            android:text="@string/settings_set_time"
+            android:nextFocusUp="@id/cbShacharit" android:nextFocusDown="@id/cbMincha" />
+    </LinearLayout>
+
+    <!-- מנחה -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="12dp">
+        <CheckBox android:id="@+id/cbMincha"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/settings_enable_mincha" android:textColor="?attr/colorTextMain"
+            android:nextFocusUp="@id/cbShacharit" android:nextFocusDown="@id/cbArvit" />
+        <Button android:id="@+id/btnTimeMincha"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
+            android:text="@string/settings_set_time"
+            android:nextFocusUp="@id/btnTimeShacharit" android:nextFocusDown="@id/cbArvit" />
+    </LinearLayout>
+
+    <!-- ערבית -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="20dp">
+        <CheckBox android:id="@+id/cbArvit"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/settings_enable_arvit" android:textColor="?attr/colorTextMain"
+            android:nextFocusUp="@id/cbMincha" android:nextFocusDown="@id/btnBattery" />
+        <Button android:id="@+id/btnTimeArvit"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
+            android:text="@string/settings_set_time"
+            android:nextFocusUp="@id/btnTimeMincha" android:nextFocusDown="@id/btnBattery" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnBattery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_round_button"
+        android:textColor="#FFFFFF"
+        android:text="@string/settings_ignore_battery"
+        android:nextFocusUp="@id/cbArvit" />
+
+</LinearLayout>
+</ScrollView>
