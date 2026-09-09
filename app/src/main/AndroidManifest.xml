@@ -37,6 +37,11 @@
             android:label="@string/settings_title" />
 
         <activity
+            android:name=".ZmanimActivity"
+            android:exported="false"
+            android:label="@string/zmanim_title" />
+
+        <activity
             android:name=".FileBrowserActivity"
             android:exported="false"
             android:label="@string/file_browser_title" />

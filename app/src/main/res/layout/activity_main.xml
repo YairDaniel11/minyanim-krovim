@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="?attr/colorBgMain"
+    android:fillViewport="true"
+    android:scrollbars="vertical">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:padding="12dp">
 
     <TextView
@@ -16,12 +22,20 @@
         android:visibility="gone"
         android:layout_marginBottom="6dp" />
 
-    <LinearLayout
-        android:id="@+id/dayRow"
+    <!-- שורת ימים - בתוך HorizontalScrollView כדי שתמיד תהיה נגישה גם
+         במסכים צרים מאוד (מכשירי מקשים), בלי להיחתך או להצטופף. -->
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="10dp" />
+        android:scrollbars="none"
+        android:layout_marginBottom="10dp">
+
+        <LinearLayout
+            android:id="@+id/dayRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 
     <TextView
         android:id="@+id/tvNextTitle"
@@ -73,29 +87,24 @@
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
 
-    <FrameLayout
+    <!-- רשימת המניינים מוצגת כ-LinearLayout רגיל שממולא בקוד (לא ListView) -
+         כך שהיא חלק מה-ScrollView הכללי של המסך ואפשר לגלול אליה ואל
+         הכפתורים שמתחתיה בלי בעיה, גם עם מקשי ניווט פיזיים. -->
+    <LinearLayout
+        android:id="@+id/listMinyanim"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
 
-        <ListView
-            android:id="@+id/listMinyanim"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:nextFocusUp="@id/tvLast"
-            android:divider="@null"
-            android:dividerHeight="4dp" />
-
-        <TextView
-            android:id="@+id/tvEmpty"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="@string/label_no_data"
-            android:textColor="?attr/colorTextSecondary"
-            android:gravity="center"
-            android:padding="20dp"
-            android:visibility="gone" />
-    </FrameLayout>
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/label_no_data"
+        android:textColor="?attr/colorTextSecondary"
+        android:gravity="center"
+        android:padding="20dp"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -112,6 +121,18 @@
             android:background="@drawable/bg_round_button"
             android:textColor="#FFFFFF"
             android:text="@string/btn_settings"
+            android:nextFocusRight="@id/btnZmanim" />
+
+        <Button
+            android:id="@+id/btnZmanim"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_round_button"
+            android:textColor="#FFFFFF"
+            android:text="@string/btn_zmanim"
+            android:nextFocusLeft="@id/btnSettings"
             android:nextFocusRight="@id/btnRefresh" />
 
         <Button
@@ -122,7 +143,8 @@
             android:background="@drawable/bg_round_button"
             android:textColor="#FFFFFF"
             android:text="@string/btn_refresh"
-            android:nextFocusLeft="@id/btnSettings" />
+            android:nextFocusLeft="@id/btnZmanim" />
     </LinearLayout>
 
 </LinearLayout>
+</ScrollView>

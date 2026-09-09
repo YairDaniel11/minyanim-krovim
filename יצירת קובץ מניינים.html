@@ -126,7 +126,18 @@
 
 <div class="global-box">
   <label>שם המתחם/האזור (אופציונלי - יוצג ככותרת משנה באפליקציה)</label>
-  <input type="text" id="globalLocation" placeholder='לדוגמה: מתחם הסופרים'>
+  <input type="text" id="globalLocation" placeholder='לדוגמה: השכונה שלכם'>
+
+  <label>קואורדינטות - קו רוחב ואורך (רק אם משתמשים בזמנים לפי שקיעה/נץ)</label>
+  <div style="display:flex; gap:10px;">
+    <input type="text" id="globalLat" placeholder="קו רוחב, למשל 31.9">
+    <input type="text" id="globalLon" placeholder="קו אורך, למשל 34.8">
+  </div>
+  <p class="day-note" style="margin-top:6px;">
+    אפשר למצוא את הקואורדינטות של המקום שלכם ב-Google Maps: לוחצים לחיצה
+    ארוכה על המקום במפה, והמספרים שמופיעים למעלה הם קו הרוחב וקו האורך.
+    נדרש רק אם רוצים למלא שדה שעה כמו "שקיעה-20" (ראו הסבר ליד כל שדה שעה).
+  </p>
 </div>
 
 <div class="actions">
@@ -148,13 +159,14 @@ const DAYS = [
   { prefix: 'sh', key: 'shabbat', title: 'שבת', note: '' },
 ];
 const TIME_RE = /^\d{1,2}:\d{2}$/;
+const SUN_TOKEN_RE = /^(שקיעה|נץ|הנץ|shkia|sunset|netz|sunrise)\s*([+-]\s*\d+)?$/i;
 
 function dayBlockHtml(day, id) {
   const cells = PRAYERS.map(prayer => `
     <div>
       <label>${PRAYER_LABELS[prayer]}</label>
       <div class="prayer-cell">
-        <input type="time" id="${day.prefix}-${prayer}-${id}">
+        <input type="text" id="${day.prefix}-${prayer}-${id}" placeholder="19:30 או שקיעה-20">
         <div class="prayer-extra-label">
           <input type="text" id="${day.prefix}-${prayer}-label-${id}" placeholder="תיאור הלכתי (למשל נץ החמה)">
         </div>
@@ -169,6 +181,7 @@ function dayBlockHtml(day, id) {
     <div class="day-block">
       <h4>${day.title}</h4>
       ${day.note ? `<p class="day-note">${day.note}</p>` : ''}
+      <p class="day-note">שדה השעה מקבל גם שעה קבועה (19:30) וגם זמן יחסי לשקיעה/נץ (שקיעה-20, נץ+15) - דורש מילוי קואורדינטות למעלה.</p>
       <div class="times-grid">${cells}</div>
     </div>
   `;
@@ -244,7 +257,7 @@ function splitPrayerValue(raw) {
   const extras = [];
 
   items.forEach(item => {
-    if (TIME_RE.test(item)) {
+    if (TIME_RE.test(item) || SUN_TOKEN_RE.test(item.trim())) {
       if (!time) time = item; else extras.push(item);
     } else {
       if (!label) label = item; else extras.push(item);
@@ -302,6 +315,11 @@ function buildData() {
   const data = {};
   const location = document.getElementById('globalLocation').value.trim();
   if (location) data.location = location;
+
+  const lat = parseFloat(document.getElementById('globalLat').value);
+  const lon = parseFloat(document.getElementById('globalLon').value);
+  if (!isNaN(lat) && !isNaN(lon)) data.coordinates = { lat: lat, lon: lon };
+
   data.shuls = shuls;
   return data;
 }
@@ -312,6 +330,13 @@ function downloadJson() {
 
   if (data.shuls.length === 0) {
     status.textContent = 'לא הוזן אף בית כנסת עם שם ולפחות שעה אחת.';
+    status.style.color = '#c0392b';
+    return;
+  }
+
+  const usesSunTokens = JSON.stringify(data.shuls).match(SUN_TOKEN_RE) !== null;
+  if (usesSunTokens && !data.coordinates) {
+    status.textContent = 'שימו לב: יש שדה עם זמן יחסי לשקיעה/נץ אבל לא מולאו קואורדינטות למעלה - האפליקציה לא תוכל לחשב את הזמן הזה.';
     status.style.color = '#c0392b';
     return;
   }
@@ -360,6 +385,9 @@ function importJsonFile() {
     }
 
     document.getElementById('globalLocation').value = data.location || '';
+    const coords = data.coordinates || {};
+    document.getElementById('globalLat').value = coords.lat !== undefined ? coords.lat : '';
+    document.getElementById('globalLon').value = coords.lon !== undefined ? coords.lon : '';
 
     // מנקים את כל הכרטיסים הקיימים בטופס לפני טעינת הקובץ
     document.getElementById('shulsContainer').innerHTML = '';

@@ -3,6 +3,8 @@ package com.meir.minyanimkrovim;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,10 +12,8 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
 
     private TextView tvLocation, tvNextTitle, tvNext, tvLastTitle, tvLast, tvAllTitle, tvEmpty;
     private LinearLayout dayRow;
-    private ListView listMinyanim;
+    private LinearLayout listMinyanim;
     private final List<Button> dayButtons = new ArrayList<>();
     private int selectedDayOfWeek;
 
@@ -58,15 +58,22 @@ public class MainActivity extends Activity {
         tvAllTitle = (TextView) findViewById(R.id.tvAllTitle);
         tvEmpty = (TextView) findViewById(R.id.tvEmpty);
         dayRow = (LinearLayout) findViewById(R.id.dayRow);
-        listMinyanim = (ListView) findViewById(R.id.listMinyanim);
+        listMinyanim = (LinearLayout) findViewById(R.id.listMinyanim);
 
         Button btnSettings = (Button) findViewById(R.id.btnSettings);
+        Button btnZmanim = (Button) findViewById(R.id.btnZmanim);
         Button btnRefresh = (Button) findViewById(R.id.btnRefresh);
 
         btnSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+            }
+        });
+        btnZmanim.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, ZmanimActivity.class));
             }
         });
         btnRefresh.setOnClickListener(new View.OnClickListener() {
@@ -94,18 +101,31 @@ public class MainActivity extends Activity {
         String[] letters = getResources().getStringArray(R.array.day_letters);
         dayRow.removeAllViews();
         dayButtons.clear();
+        int screenWidthDp = getResources().getConfiguration().screenWidthDp;
+        // רוחב קבוע (לא weight=1 בתוך HorizontalScrollView, אחרת כל הכפתורים
+        // מצטמצמים לרוחב אפס) - מספיק רחב לנוחות מקשים, אבל מצטמצם מעט
+        // במסכים צרים כדי שיהיו נראים כמה שיותר כפתורים בבת אחת.
+        int buttonWidthDp = screenWidthDp > 0 && screenWidthDp < 260 ? 40 : 48;
+        int buttonWidthPx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, buttonWidthDp, getResources().getDisplayMetrics());
+
+        int todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+
         for (int i = 0; i < 7; i++) {
             final int calendarDow = i + 1; // Calendar.SUNDAY == 1
             Button b = new Button(this);
             b.setText(letters[i]);
             b.setTextSize(13);
-            b.setPadding(4, 8, 4, 8);
+            b.setPadding(2, 8, 2, 8);
             b.setAllCaps(false);
             b.setBackgroundResource(R.drawable.bg_round_button);
             b.setTextColor(0xFFFFFFFF);
+            if (calendarDow == todayDow) {
+                b.setTypeface(b.getTypeface(), Typeface.BOLD);
+            }
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-            lp.setMargins(2, 0, 2, 0);
+                    buttonWidthPx, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(3, 0, 3, 0);
             b.setLayoutParams(lp);
             b.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -127,8 +147,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < dayButtons.size(); i++) {
             boolean selected = (i + 1) == selectedDayOfWeek;
             Button b = dayButtons.get(i);
-            b.getBackground().mutate().setColorFilter(selected ? accent : card,
-                    android.graphics.PorterDuff.Mode.SRC_IN);
+            b.getBackground().mutate().setColorFilter(selected ? accent : card, PorterDuff.Mode.SRC_IN);
             b.setTextColor(selected ? 0xFFFFFFFF : mainText);
         }
     }
@@ -176,6 +195,9 @@ public class MainActivity extends Activity {
 
         List<MinyanEntry> dayEntries = MinyanDataStore.filterAndSortForToday(all, dayType);
         tvAllTitle.setVisibility(View.VISIBLE);
+        tvEmpty.setVisibility(View.GONE);
+
+        MinyanEntry highlighted = null;
 
         if (isToday) {
             tvNextTitle.setVisibility(View.VISIBLE);
@@ -186,6 +208,7 @@ public class MainActivity extends Activity {
 
             MinyanEntry next = MinyanDataStore.findNext(dayEntries, nowMinutes);
             MinyanEntry last = MinyanDataStore.findLast(dayEntries, nowMinutes);
+            highlighted = next;
 
             tvNext.setText(next != null
                     ? describeEntry(next) + " - " + statusLine(next, nowMinutes)
@@ -206,12 +229,14 @@ public class MainActivity extends Activity {
         }
 
         if (dayEntries.isEmpty()) {
-            showEmptyList();
+            listMinyanim.setVisibility(View.GONE);
+            tvEmpty.setVisibility(View.VISIBLE);
+            // אין מניינים ליום הזה - שונה במפורש מ"לא נטען קובץ בכלל"
+            tvEmpty.setText(R.string.label_no_entries_for_day);
         } else {
             tvEmpty.setVisibility(View.GONE);
             listMinyanim.setVisibility(View.VISIBLE);
-            listMinyanim.setAdapter(new MinyanAdapter(this, dayEntries, nowMinutes,
-                    isToday ? MinyanDataStore.findNext(dayEntries, nowMinutes) : null));
+            populateList(dayEntries, nowMinutes, highlighted);
         }
     }
 
@@ -238,10 +263,6 @@ public class MainActivity extends Activity {
         tvLast.setVisibility(View.GONE);
         tvAllTitle.setVisibility(View.GONE);
         tvEmpty.setText(message);
-        showEmptyList();
-    }
-
-    private void showEmptyList() {
         listMinyanim.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.VISIBLE);
     }
@@ -273,38 +294,26 @@ public class MainActivity extends Activity {
         return getString(future ? R.string.starts_in_hours_minutes : R.string.started_hours_minutes_ago, hours, minutes);
     }
 
-    /** אדפטר פשוט לרשימת המניינים - מדגיש את המניין הקרוב ביותר. */
-    private class MinyanAdapter extends ArrayAdapter<MinyanEntry> {
-        private final int nowMinutes;
-        private final MinyanEntry highlighted;
-        private final LayoutInflater inflater;
+    /** ממלא ידנית את מיכל הרשימה (LinearLayout רגיל בתוך ה-ScrollView הראשי - לא ListView). */
+    private void populateList(List<MinyanEntry> entries, int nowMinutes, MinyanEntry highlighted) {
+        listMinyanim.removeAllViews();
+        LayoutInflater inflater = getLayoutInflater();
 
-        MinyanAdapter(Activity activity, List<MinyanEntry> items, int nowMinutes, MinyanEntry highlighted) {
-            super(activity, 0, new ArrayList<>(items));
-            this.nowMinutes = nowMinutes;
-            this.highlighted = highlighted;
-            this.inflater = activity.getLayoutInflater();
-        }
+        int cardColor = resolveAttrColor(R.attr.colorBgCard);
+        int mainTextColor = resolveAttrColor(R.attr.colorTextMain);
+        int secondaryTextColor = resolveAttrColor(R.attr.colorTextSecondary);
+        int nextColor = resolveAttrColor(R.attr.colorNext);
 
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View row = convertView != null ? convertView
-                    : inflater.inflate(R.layout.list_item_minyan, parent, false);
-
-            MinyanEntry entry = getItem(position);
+        for (MinyanEntry entry : entries) {
+            View row = inflater.inflate(R.layout.list_item_minyan, listMinyanim, false);
             TextView tvName = (TextView) row.findViewById(R.id.tvShulName);
             TextView tvPrayer = (TextView) row.findViewById(R.id.tvPrayerLine);
             TextView tvStatus = (TextView) row.findViewById(R.id.tvStatusLine);
 
             String nusachPart = entry.nusach.length() > 0 ? entry.nusach + " | " : "";
             tvName.setText(entry.shulName);
-            tvPrayer.setText(nusachPart + entry.prayerLabel(MainActivity.this) + " | " + entry.timeLabel());
+            tvPrayer.setText(nusachPart + entry.prayerLabel(this) + " | " + entry.timeLabel());
             tvStatus.setText(statusLine(entry, nowMinutes));
-
-            int cardColor = resolveAttrColor(R.attr.colorBgCard);
-            int mainTextColor = resolveAttrColor(R.attr.colorTextMain);
-            int secondaryTextColor = resolveAttrColor(R.attr.colorTextSecondary);
-            int nextColor = resolveAttrColor(R.attr.colorNext);
 
             row.setBackgroundColor(cardColor);
             tvName.setTextColor(mainTextColor);
@@ -313,7 +322,12 @@ public class MainActivity extends Activity {
             boolean isHighlighted = highlighted != null && entry == highlighted;
             tvStatus.setTextColor(isHighlighted ? nextColor : secondaryTextColor);
 
-            return row;
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, 0, 4);
+            row.setLayoutParams(lp);
+
+            listMinyanim.addView(row);
         }
     }
 

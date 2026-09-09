@@ -17,33 +17,41 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * פורמט הקובץ (JSON) שהאפליקציה קוראת:
  * {
- *   "location": "מתחם הסופרים",           // אופציונלי - מוצג ככותרת משנה
+ *   "location": "השכונה שלכם",                 // אופציונלי - מוצג ככותרת משנה
+ *   "coordinates": { "lat": 31.9, "lon": 34.8 }, // אופציונלי - נדרש רק אם יש זמנים יחסיים לשקיעה/נץ
  *   "shuls": [
  *     {
  *       "name": "חניכי הישיבות - חברון",
- *       "nusach": "אשכנז",                 // אופציונלי, יכול גם להיות null
+ *       "nusach": "אשכנז",
  *       "prayers": {
- *         "weekday": {...}, "friday": {...}, "shabbat": {...}   // כל אחד אופציונלי
+ *         "weekday": {...}, "friday": {...}, "shabbat": {...}
  *       }
  *     }
  *   ]
  * }
  * כל אחד מ-shacharit/mincha/arvit בתוך אובייקט יום יכול להיות:
- *  - מחרוזת "HH:mm" (שעה קבועה - נכנסת לרשימה).
- *  - מחרוזת תיאור הלכתי בלי שעה (למשל "בזמן"/"בשקיעה") - מדולגת, האפליקציה
- *    לא מחשבת זמנים הלכתיים (ראו README).
- *  - מערך של שניים, אחד מהם "HH:mm" והשני תיאור הלכתי - נכנס כרשומה אחת עם
- *    השעה מהמערך והתיאור כהערה נלווית (למשל "08:00 (נץ החמה)").
- *  - מערך עם יותר מ"שעה" תקינה אחת (למשל כמה זמני ערבית) - כל שעה תקינה
- *    הופכת לרשומה נפרדת; איברים בלי שעה מדולגים.
+ *  - מחרוזת "HH:mm" (שעה קבועה).
+ *  - מחרוזת זמן יחסי לשקיעה/נץ: "שקיעה" / "שקיעה-20" / "שקיעה+10" /
+ *    "נץ+30" וכו' (גם באנגלית: shkia/sunset, netz/sunrise). מחושב מחדש
+ *    בכל רענון לפי התאריך של היום ("coordinates" נדרש לחישוב הזה).
+ *  - מערך של שניים, אחד מהם זמן תקין (קבוע או יחסי) והשני תיאור הלכתי
+ *    חופשי - נכנס כרשומה אחת עם הזמן והתיאור כהערה נלווית.
+ *  - מערך עם כמה זמנים תקינים - כל אחד הופך לרשומה נפרדת.
  */
 public class MinyanDataStore {
 
     private static final String FILE_NAME = "minyanim_data.json";
+
+    // "שקיעה"/"שקיעה-20"/"shkia+10" וכו' - קבוצה 1: שם הטוקן, קבוצה 2: +/- מספר (אופציונלי)
+    private static final Pattern SUN_TOKEN = Pattern.compile(
+            "^(שקיעה|נץ|הנץ|shkia|sunset|netz|sunrise)\\s*([+-]\\s*\\d+)?$",
+            Pattern.CASE_INSENSITIVE);
 
     /** מעתיק את תוכן ה-Uri שנבחר (מ-ACTION_OPEN_DOCUMENT/GET_CONTENT/דפדפן קבצים) לאחסון הפנימי. */
     public static void importFromUri(Context context, Uri uri) throws IOException {
@@ -59,7 +67,6 @@ public class MinyanDataStore {
         } finally {
             in.close();
         }
-        // ולידציה בסיסית - שהקובץ הוא JSON תקין עם מפתח "shuls" - לפני שמירה
         try {
             JSONObject test = new JSONObject(sb.toString());
             if (!test.has("shuls")) throw new IOException("הקובץ לא מכיל את המפתח \"shuls\"");
@@ -92,7 +99,6 @@ public class MinyanDataStore {
         return new JSONObject(sb.toString());
     }
 
-    /** שם המתחם/האזור מהקובץ שנטען (מפתח "location") - "" אם לא הוגדר או שלא נטען קובץ. */
     public static String loadLocation(Context context) {
         if (!hasData(context)) return "";
         try {
@@ -102,14 +108,36 @@ public class MinyanDataStore {
         }
     }
 
-    /** קורא את הקובץ השמור ומחזיר רשימה שטוחה של כל המניינים (כל סוגי הימים). */
+    /** קואורדינטות מהקובץ שנטען (אם יש) - null אם אין קובץ/אין שדה coordinates. */
+    public static double[] loadCoordinatesFromFile(Context context) {
+        if (!hasData(context)) return null;
+        try {
+            JSONObject coords = readRootJson(context).optJSONObject("coordinates");
+            if (coords == null) return null;
+            double lat = coords.optDouble("lat", Double.NaN);
+            double lon = coords.optDouble("lon", Double.NaN);
+            if (Double.isNaN(lat) || Double.isNaN(lon)) return null;
+            return new double[]{lat, lon};
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** קורא את הקובץ השמור ומחזיר רשימה שטוחה של כל המניינים, עם זמני שקיעה/נץ מחושבים ליום הנוכחי. */
     public static List<MinyanEntry> loadAll(Context context) throws IOException, JSONException {
+        return loadAll(context, Calendar.getInstance());
+    }
+
+    /** גרסה שמקבלת תאריך ייחוס לחישוב שקיעה/נץ - שימושי לבדיקות ולתצוגת ימים אחרים. */
+    public static List<MinyanEntry> loadAll(Context context, Calendar referenceDate) throws IOException, JSONException {
         List<MinyanEntry> result = new ArrayList<>();
         if (!hasData(context)) return result;
 
         JSONObject root = readRootJson(context);
         JSONArray shuls = root.optJSONArray("shuls");
         if (shuls == null) return result;
+
+        SunTimes.Result sun = computeSunTimes(root, referenceDate);
 
         for (int i = 0; i < shuls.length(); i++) {
             JSONObject shul = shuls.getJSONObject(i);
@@ -118,23 +146,69 @@ public class MinyanDataStore {
             JSONObject prayers = shul.optJSONObject("prayers");
             if (prayers == null) continue;
 
-            addDayType(result, prayers.optJSONObject("weekday"), name, nusach, "weekday");
-            addDayType(result, prayers.optJSONObject("friday"), name, nusach, "friday");
-            addDayType(result, prayers.optJSONObject("shabbat"), name, nusach, "shabbat");
+            addDayType(result, prayers.optJSONObject("weekday"), name, nusach, "weekday", sun);
+            addDayType(result, prayers.optJSONObject("friday"), name, nusach, "friday", sun);
+            addDayType(result, prayers.optJSONObject("shabbat"), name, nusach, "shabbat", sun);
         }
         return result;
     }
 
-    private static void addDayType(List<MinyanEntry> out, JSONObject dayObj,
-                                    String name, String nusach, String dayType) {
-        if (dayObj == null) return;
-        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "shacharit");
-        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "mincha");
-        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "arvit");
+    /** true אם יש בקובץ לפחות זמן יחסי אחד לשקיעה/נץ אך אין קואורדינטות - כדי להציג אזהרה למשתמש. */
+    public static boolean needsCoordinatesButMissing(Context context) {
+        try {
+            JSONObject root = readRootJson(context);
+            if (root.optJSONObject("coordinates") != null) return false;
+            JSONArray shuls = root.optJSONArray("shuls");
+            if (shuls == null) return false;
+            for (int i = 0; i < shuls.length(); i++) {
+                JSONObject prayers = shuls.getJSONObject(i).optJSONObject("prayers");
+                if (prayers == null) continue;
+                for (String dayKey : new String[]{"weekday", "friday", "shabbat"}) {
+                    JSONObject dayObj = prayers.optJSONObject(dayKey);
+                    if (dayObj == null) continue;
+                    for (String prayerKey : new String[]{"shacharit", "mincha", "arvit"}) {
+                        if (containsSunToken(dayObj.opt(prayerKey))) return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 
-    private static void addPrayerIfPresent(List<MinyanEntry> out, JSONObject dayObj,
-                                            String name, String nusach, String dayType, String prayerKey) {
+    private static boolean containsSunToken(Object raw) {
+        if (raw == null) return false;
+        if (raw instanceof JSONArray) {
+            JSONArray arr = (JSONArray) raw;
+            for (int i = 0; i < arr.length(); i++) {
+                if (SUN_TOKEN.matcher(arr.optString(i, "").trim()).matches()) return true;
+            }
+            return false;
+        }
+        return SUN_TOKEN.matcher(String.valueOf(raw).trim()).matches();
+    }
+
+    private static SunTimes.Result computeSunTimes(JSONObject root, Calendar referenceDate) {
+        JSONObject coords = root.optJSONObject("coordinates");
+        if (coords == null) return null;
+        double lat = coords.optDouble("lat", Double.NaN);
+        double lon = coords.optDouble("lon", Double.NaN);
+        if (Double.isNaN(lat) || Double.isNaN(lon)) return null;
+        return SunTimes.compute(lat, lon, referenceDate);
+    }
+
+    private static void addDayType(List<MinyanEntry> out, JSONObject dayObj, String name,
+                                    String nusach, String dayType, SunTimes.Result sun) {
+        if (dayObj == null) return;
+        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "shacharit", sun);
+        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "mincha", sun);
+        addPrayerIfPresent(out, dayObj, name, nusach, dayType, "arvit", sun);
+    }
+
+    private static void addPrayerIfPresent(List<MinyanEntry> out, JSONObject dayObj, String name,
+                                            String nusach, String dayType, String prayerKey,
+                                            SunTimes.Result sun) {
         if (!dayObj.has(prayerKey) || dayObj.isNull(prayerKey)) return;
         Object raw = dayObj.opt(prayerKey);
 
@@ -145,43 +219,88 @@ public class MinyanDataStore {
                 String s = arr.optString(i, "").trim();
                 if (s.length() > 0) items.add(s);
             }
-            // מערך של בדיוק שני איברים, אחד מהם שעה תקינה והשני לא - מתפרש
-            // כ"שעה + תיאור הלכתי נלווה" ונכנס כרשומה אחת (בכל סדר בין השניים).
             if (items.size() == 2) {
-                int m0 = parseTimeToMinutes(items.get(0));
-                int m1 = parseTimeToMinutes(items.get(1));
-                if (m0 >= 0 && m1 < 0) {
-                    out.add(new MinyanEntry(name, nusach, prayerKey, dayType, m0, items.get(1)));
+                TimeResolution r0 = resolveTime(items.get(0), sun);
+                TimeResolution r1 = resolveTime(items.get(1), sun);
+                if (r0.minutes >= 0 && r1.minutes < 0) {
+                    out.add(new MinyanEntry(name, nusach, prayerKey, dayType, r0.minutes,
+                            firstNonEmpty(items.get(1), r0.autoNote)));
                     return;
                 }
-                if (m1 >= 0 && m0 < 0) {
-                    out.add(new MinyanEntry(name, nusach, prayerKey, dayType, m1, items.get(0)));
+                if (r1.minutes >= 0 && r0.minutes < 0) {
+                    out.add(new MinyanEntry(name, nusach, prayerKey, dayType, r1.minutes,
+                            firstNonEmpty(items.get(0), r1.autoNote)));
                     return;
                 }
             }
-            // בכל מקרה אחר - כל איבר שהוא שעה תקינה הופך לרשומה נפרדת (כמה
-            // מניינים מאותו סוג תפילה); איברים שהם תיאור הלכתי בלבד (בלי
-            // שעה) מדולגים - האפליקציה תומכת רק בשעות קבועות (ראו README).
             for (String s : items) {
-                int minutes = parseTimeToMinutes(s);
-                if (minutes >= 0) out.add(new MinyanEntry(name, nusach, prayerKey, dayType, minutes, null));
+                TimeResolution r = resolveTime(s, sun);
+                if (r.minutes >= 0) out.add(new MinyanEntry(name, nusach, prayerKey, dayType, r.minutes, r.autoNote));
             }
             return;
         }
 
         String value = dayObj.optString(prayerKey, "").trim();
         if (value.length() == 0) return;
-        int minutes = parseTimeToMinutes(value);
-        if (minutes >= 0) out.add(new MinyanEntry(name, nusach, prayerKey, dayType, minutes, null));
+        TimeResolution r = resolveTime(value, sun);
+        if (r.minutes >= 0) out.add(new MinyanEntry(name, nusach, prayerKey, dayType, r.minutes, r.autoNote));
     }
 
-    /** ממיר "HH:mm" לדקות-מחצות. מחזיר -1 אם הפורמט לא תקין (כולל תיאורים הלכתיים). */
+    private static String firstNonEmpty(String preferred, String fallback) {
+        if (preferred != null && preferred.trim().length() > 0) return preferred.trim();
+        return fallback;
+    }
+
+    private static class TimeResolution {
+        final int minutes;   // -1 אם לא ניתן לפענח/לחשב
+        final String autoNote; // תיאור אוטומטי (רק לזמנים יחסיים לשקיעה/נץ), אפשר null
+
+        TimeResolution(int minutes, String autoNote) {
+            this.minutes = minutes;
+            this.autoNote = autoNote;
+        }
+    }
+
+    /** מפענח ערך זמן בודד - שעה קבועה "HH:mm" או ביטוי יחסי לשקיעה/נץ. */
+    private static TimeResolution resolveTime(String raw, SunTimes.Result sun) {
+        int fixed = parseTimeToMinutes(raw);
+        if (fixed >= 0) return new TimeResolution(fixed, null);
+
+        Matcher m = SUN_TOKEN.matcher(raw.trim());
+        if (!m.matches()) return new TimeResolution(-1, null);
+        if (sun == null || !sun.valid) return new TimeResolution(-1, null);
+
+        String token = m.group(1).toLowerCase(java.util.Locale.US);
+        boolean isSunset = token.startsWith("שקיע") || token.equals("shkia") || token.equals("sunset");
+        int base = isSunset ? sun.sunsetMinutes : sun.sunriseMinutes;
+
+        int offset = 0;
+        String offsetGroup = m.group(2);
+        if (offsetGroup != null) {
+            offsetGroup = offsetGroup.replaceAll("\\s+", "");
+            offset = Integer.parseInt(offsetGroup); // כולל הסימן (+/-)
+        }
+
+        int minutes = ((base + offset) % 1440 + 1440) % 1440;
+        String baseLabel = isSunset ? "שקיעה" : "נץ";
+        String note;
+        if (offset == 0) {
+            note = baseLabel;
+        } else if (offset > 0) {
+            note = offset + " דק' אחרי " + baseLabel;
+        } else {
+            note = (-offset) + " דק' לפני " + baseLabel;
+        }
+        return new TimeResolution(minutes, note);
+    }
+
+    /** ממיר "HH:mm" לדקות-מחצות. מחזיר -1 אם הפורמט לא תקין (כולל ביטויים יחסיים/תיאורים הלכתיים). */
     public static int parseTimeToMinutes(String hhmm) {
         try {
             String[] parts = hhmm.trim().split(":");
             if (parts.length != 2) return -1;
-            int h = Integer.parseInt(parts[0]);
-            int m = Integer.parseInt(parts[1]);
+            int h = Integer.parseInt(parts[0].trim());
+            int m = Integer.parseInt(parts[1].trim());
             if (h < 0 || h > 23 || m < 0 || m > 59) return -1;
             return h * 60 + m;
         } catch (Exception e) {
@@ -220,7 +339,6 @@ public class MinyanDataStore {
         return today;
     }
 
-    /** המניין הבא הכי קרוב מבין אלו מסוג היום הנתון, לאחר "עכשיו" (כולל שוויון). null אם אין. */
     public static MinyanEntry findNext(List<MinyanEntry> sortedToday, int nowMinutes) {
         for (MinyanEntry e : sortedToday) {
             if (e.minutesOfDay >= nowMinutes) return e;
@@ -228,7 +346,6 @@ public class MinyanDataStore {
         return null;
     }
 
-    /** המניין האחרון שכבר התחיל (השעה הכי גבוהה שהיא <= עכשיו). null אם עדיין לא התחיל כלום. */
     public static MinyanEntry findLast(List<MinyanEntry> sortedToday, int nowMinutes) {
         MinyanEntry last = null;
         for (MinyanEntry e : sortedToday) {
@@ -246,7 +363,6 @@ public class MinyanDataStore {
         for (MinyanEntry e : today) {
             if (e.prayerType.equals(prayerType) && e.minutesOfDay >= nowMinutes) return e;
         }
-        // לא נמצא היום - מסתכלים על סוג היום של מחר
         Calendar tomorrow = (Calendar) now.clone();
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
         String tomorrowType = currentDayType(tomorrow);

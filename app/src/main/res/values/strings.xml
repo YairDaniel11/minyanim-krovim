@@ -8,6 +8,7 @@
     <string name="btn_refresh">רענון</string>
 
     <string name="label_no_data">לא נטען קובץ מניינים. היכנסו ל"הגדרות" כדי לבחור קובץ JSON.</string>
+    <string name="label_no_entries_for_day">אין מניינים מוגדרים ליום הזה בקובץ שנטען.</string>
     <string name="label_load_error">שגיאה בטעינת הקובץ: %1$s</string>
 
     <string name="label_next_minyan_title">המניין הקרוב</string>
@@ -79,6 +80,40 @@
 
     <string name="file_browser_title">בחירת קובץ מניינים</string>
     <string name="file_browser_up">.. (תיקייה קודמת)</string>
+    <string name="file_browser_back_to_roots">.. (חזרה לרשימת האחסונים)</string>
     <string name="file_browser_cannot_open">לא ניתן לפתוח את התיקייה הזו</string>
     <string name="file_browser_permission_denied">נדרשת הרשאת גישה לאחסון כדי לעיין בקבצים</string>
+    <string name="file_browser_internal_storage">📱 אחסון פנימי</string>
+    <string name="file_browser_external_storage">💾 כרטיס זיכרון (אחסון חיצוני)</string>
+    <string name="file_browser_roots_title">בחרו מיקום אחסון</string>
+
+    <string name="time_picker_title">קביעת שעת התראה</string>
+    <string name="time_picker_hour">שעה</string>
+    <string name="time_picker_minute">דקה</string>
+    <string name="btn_ok">אישור</string>
+    <string name="btn_cancel">ביטול</string>
+
+    <string name="btn_zmanim">זמני היום</string>
+    <string name="zmanim_title">זמני היום</string>
+    <string name="zmanim_disclaimer">חישוב אסטרונומי כללי - לא תחליף לפסיקה הלכתית מוסמכת.</string>
+    <string name="zmanim_no_location">לא הוגדר מיקום. הזינו קואורדינטות למטה, או טענו קובץ מניינים שכולל אותן.</string>
+    <string name="zmanim_set_location">הגדרת מיקום ידנית</string>
+    <string name="zmanim_lat_hint">קו רוחב (למשל 31.9)</string>
+    <string name="zmanim_lon_hint">קו אורך (למשל 34.8)</string>
+    <string name="zmanim_save_location">שמירת מיקום</string>
+    <string name="zmanim_location_saved">המיקום נשמר</string>
+    <string name="zmanim_invalid_location">קואורדינטות לא תקינות</string>
+    <string name="zmanim_using_file_location">המיקום מבוסס על קובץ המניינים שנטען</string>
+
+    <string name="zman_alot_hashachar">עלות השחר</string>
+    <string name="zman_netz_hachama">הנץ החמה</string>
+    <string name="zman_sof_zman_shema">סוף זמן קריאת שמע (גר"א)</string>
+    <string name="zman_sof_zman_tefila">סוף זמן תפילה (גר"א)</string>
+    <string name="zman_chatzot">חצות היום</string>
+    <string name="zman_mincha_gedola">מנחה גדולה</string>
+    <string name="zman_mincha_ketana">מנחה קטנה</string>
+    <string name="zman_plag_hamincha">פלג המנחה</string>
+    <string name="zman_shkiat_hachama">שקיעת החמה</string>
+    <string name="zman_tzeit_hakochavim">צאת הכוכבים</string>
+
 </resources>

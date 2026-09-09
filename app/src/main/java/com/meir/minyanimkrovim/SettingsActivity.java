@@ -1,7 +1,7 @@
 package com.meir.minyanimkrovim;
 
 import android.app.Activity;
-import android.app.TimePickerDialog;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -9,12 +9,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 public class SettingsActivity extends Activity {
@@ -43,13 +45,17 @@ public class SettingsActivity extends Activity {
         btnBattery = (Button) findViewById(R.id.btnBattery);
         rgTheme = (RadioGroup) findViewById(R.id.rgTheme);
 
-        btnLoadFile.setOnClickListener(v -> openFilePicker());
+        btnLoadFile.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openFilePicker(); }
+        });
 
         setupPrayerRow(cbShacharit, btnTimeShacharit, AlarmScheduler.TYPE_SHACHARIT);
         setupPrayerRow(cbMincha, btnTimeMincha, AlarmScheduler.TYPE_MINCHA);
         setupPrayerRow(cbArvit, btnTimeArvit, AlarmScheduler.TYPE_ARVIT);
 
-        btnBattery.setOnClickListener(v -> requestIgnoreBatteryOptimizations());
+        btnBattery.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { requestIgnoreBatteryOptimizations(); }
+        });
 
         setupThemeSelector();
     }
@@ -87,20 +93,65 @@ public class SettingsActivity extends Activity {
             }
         });
 
-        timeButton.setOnClickListener(v -> {
-            int currentMinutes = AlarmScheduler.getMinutesOfDay(SettingsActivity.this, type);
-            int hour = currentMinutes / 60;
-            int minute = currentMinutes % 60;
-            new TimePickerDialog(SettingsActivity.this, new TimePickerDialog.OnTimeSetListener() {
-                @Override
-                public void onTimeSet(TimePicker view, int hourOfDay, int minuteOfHour) {
-                    int newMinutes = hourOfDay * 60 + minuteOfHour;
-                    timeButton.setText(formatMinutes(newMinutes) + " - " + getString(R.string.settings_set_time));
-                    boolean isEnabled = checkBox.isChecked();
-                    AlarmScheduler.setAlarm(SettingsActivity.this, type, isEnabled, newMinutes);
-                }
-            }, hour, minute, true).show();
+        timeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showTimePickerDialog(type, timeButton, checkBox);
+            }
         });
+    }
+
+    /**
+     * דיאלוג שעה שבנוי ידנית (NumberPicker) במקום TimePickerDialog של המערכת -
+     * כך שהמראה זהה בכל גרסאות אנדרואיד (על מכשיר ישן במיוחד, TimePickerDialog
+     * המובנה נראה שונה לגמרי בין גרסאות, וזה מבלבל משתמשים).
+     */
+    private void showTimePickerDialog(final String type, final Button timeButton, final CheckBox checkBox) {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View content = inflater.inflate(R.layout.dialog_time_picker, null);
+
+        final NumberPicker pickerHour = (NumberPicker) content.findViewById(R.id.pickerHour);
+        final NumberPicker pickerMinute = (NumberPicker) content.findViewById(R.id.pickerMinute);
+        Button btnOk = (Button) content.findViewById(R.id.btnTimePickerOk);
+        Button btnCancel = (Button) content.findViewById(R.id.btnTimePickerCancel);
+
+        pickerHour.setMinValue(0);
+        pickerHour.setMaxValue(23);
+        pickerHour.setFormatter(new NumberPicker.Formatter() {
+            @Override public String format(int value) { return String.format(java.util.Locale.US, "%02d", value); }
+        });
+
+        pickerMinute.setMinValue(0);
+        pickerMinute.setMaxValue(59);
+        pickerMinute.setFormatter(new NumberPicker.Formatter() {
+            @Override public String format(int value) { return String.format(java.util.Locale.US, "%02d", value); }
+        });
+
+        int currentMinutes = AlarmScheduler.getMinutesOfDay(this, type);
+        pickerHour.setValue(currentMinutes / 60);
+        pickerMinute.setValue(currentMinutes % 60);
+
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(content)
+                .setCancelable(true)
+                .create();
+
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { dialog.dismiss(); }
+        });
+
+        btnOk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int newMinutes = pickerHour.getValue() * 60 + pickerMinute.getValue();
+                timeButton.setText(formatMinutes(newMinutes) + " - " + getString(R.string.settings_set_time));
+                boolean isEnabled = checkBox.isChecked();
+                AlarmScheduler.setAlarm(SettingsActivity.this, type, isEnabled, newMinutes);
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     private String formatMinutes(int minutesOfDay) {
@@ -119,19 +170,11 @@ public class SettingsActivity extends Activity {
                 return;
             }
         }
-        // מכשיר ישן יותר - אין בכלל את מנגנון ניהול הסוללה הזה, נחשב כפטור ממילא
         Toast.makeText(this, R.string.settings_ignore_battery, Toast.LENGTH_SHORT).show();
     }
 
     private void openFilePicker() {
         if (Build.VERSION.SDK_INT < 29 /* לפני scoped storage */) {
-            // במכשירים ישנים/מותאמים (כגון MIUI ישן) חלק ממנהלי הקבצים לא
-            // מממשים Storage Access Framework בכלל, ואז ACTION_OPEN_DOCUMENT/
-            // ACTION_GET_CONTENT מציגים רק אפליקציות ענן (Drive/Gmail) או
-            // קטגוריות מובנות מוגבלות (הורדות/תמונות/קול/וידאו) בלי אפשרות
-            // לעיין באחסון המקומי ולמצוא קובץ JSON שם. לכן, במכשירים כאלה
-            // (שעדיין לא כפופים ל-scoped storage) פותחים דפדפן קבצים פנימי
-            // שקורא ישירות מהאחסון החיצוני.
             openInternalFileBrowser();
         } else {
             openSystemFilePicker();
@@ -141,7 +184,7 @@ public class SettingsActivity extends Activity {
     private void openSystemFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*"); // מאפשרים גם text/plain - חלק מהמכשירים לא מזהים application/json
+        intent.setType("*/*");
         try {
             startActivityForResult(
                     Intent.createChooser(intent, getString(R.string.btn_load_file)),
@@ -152,7 +195,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void openInternalFileBrowser() {
-        if (Build.VERSION.SDK_INT >= 23 /* M - הרשאות בזמן ריצה */
+        if (Build.VERSION.SDK_INT >= 23
                 && checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE},
