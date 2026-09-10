@@ -129,6 +129,9 @@
   <input type="text" id="globalLocation" placeholder='לדוגמה: השכונה שלכם'>
 
   <label>קואורדינטות - קו רוחב ואורך (רק אם משתמשים בזמנים לפי שקיעה/נץ)</label>
+  <select id="citySelect" onchange="applyCityPreset()" style="margin-bottom:8px;">
+    <option value="">-- בחירת עיר מהרשימה (ממלא אוטומטית) --</option>
+  </select>
   <div style="display:flex; gap:10px;">
     <input type="text" id="globalLat" placeholder="קו רוחב, למשל 31.9">
     <input type="text" id="globalLon" placeholder="קו אורך, למשל 34.8">
@@ -158,6 +161,40 @@ const DAYS = [
   { prefix: 'fr', key: 'friday', title: 'יום שישי', note: 'רק אם שונה מיום חול - שאר הימים ישתמשו ב"יום חול"' },
   { prefix: 'sh', key: 'shabbat', title: 'שבת', note: '' },
 ];
+const CITY_PRESETS = [
+  { name: 'בני ברק', lat: 32.0807, lon: 34.8338 },
+  { name: 'בני ברק - מתחם הסופרים', lat: 32.0853, lon: 34.8321 },
+  { name: 'ירושלים - רוממה', lat: 31.7876, lon: 35.2007 },
+  { name: 'ירושלים - רמת שלמה', lat: 31.8127, lon: 35.2225 },
+  { name: 'ירושלים - נווה יעקב', lat: 31.8319, lon: 35.2364 },
+  { name: 'ירושלים - גבעת שאול', lat: 31.7867, lon: 35.1926 },
+  { name: 'גבעת זאב', lat: 31.8642, lon: 35.1721 },
+  { name: 'אלעד', lat: 32.0500, lon: 34.9500 },
+  { name: 'תל אביב', lat: 32.0853, lon: 34.7818 },
+  { name: 'מודיעין עילית', lat: 31.9337, lon: 35.0480 },
+  { name: 'באר שבע', lat: 31.2518, lon: 34.7913 },
+  { name: 'נתיבות', lat: 31.4231, lon: 34.5895 },
+  { name: 'פתח תקווה', lat: 32.0870, lon: 34.8882 }
+];
+
+function populateCityPresets() {
+  const select = document.getElementById('citySelect');
+  CITY_PRESETS.forEach((city, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = city.name;
+    select.appendChild(opt);
+  });
+}
+
+function applyCityPreset() {
+  const select = document.getElementById('citySelect');
+  if (select.value === '') return;
+  const city = CITY_PRESETS[parseInt(select.value, 10)];
+  document.getElementById('globalLat').value = city.lat;
+  document.getElementById('globalLon').value = city.lon;
+}
+
 const TIME_RE = /^\d{1,2}:\d{2}$/;
 const SUN_TOKEN_RE = /^(שקיעה|נץ|הנץ|shkia|sunset|netz|sunrise)\s*([+-]\s*\d+)?$/i;
 
@@ -407,6 +444,7 @@ function importJsonFile() {
 }
 
 // שורה ראשונה כברירת מחדל
+populateCityPresets();
 addShul();
 </script>
 

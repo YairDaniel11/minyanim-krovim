@@ -98,6 +98,8 @@
     <string name="zmanim_disclaimer">חישוב אסטרונומי כללי - לא תחליף לפסיקה הלכתית מוסמכת.</string>
     <string name="zmanim_no_location">לא הוגדר מיקום. הזינו קואורדינטות למטה, או טענו קובץ מניינים שכולל אותן.</string>
     <string name="zmanim_set_location">הגדרת מיקום ידנית</string>
+    <string name="zmanim_city_picker_label">בחירת עיר מהרשימה (ממלא את השדות למטה אוטומטית, אפשר גם לערוך ידנית)</string>
+    <string name="zmanim_city_picker_prompt">-- בחירת עיר --</string>
     <string name="zmanim_lat_hint">קו רוחב (למשל 31.9)</string>
     <string name="zmanim_lon_hint">קו אורך (למשל 34.8)</string>
     <string name="zmanim_save_location">שמירת מיקום</string>

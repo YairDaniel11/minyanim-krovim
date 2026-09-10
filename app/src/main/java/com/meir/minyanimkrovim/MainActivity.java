@@ -96,24 +96,37 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** בונה שורת 7 כפתורי יום (א ב ג ד ה ו שבת) למעבר בין ימי השבוע. */
+    /**
+     * בונה 7 כפתורי יום (א ב ג ד ה ו שבת) בשתי שורות קבועות ברוחב מלא
+     * (4 בשורה העליונה, 3 בתחתונה) - כל הכפתורים ב-layout_weight=1, לא
+     * ברוחב קבוע בתוך HorizontalScrollView. כך כל 7 הימים, כולל "שבת",
+     * תמיד גלויים במלואם בכל רוחב מסך, בלי צורך בגלילה אופקית (שלא
+     * עובדת בצורה אמינה בניווט מקשים פיזיים, ועלולה "להסתיר" את הכפתור
+     * האחרון בשורה).
+     */
     private void buildDayRow() {
         String[] letters = getResources().getStringArray(R.array.day_letters);
         dayRow.removeAllViews();
         dayButtons.clear();
-        int screenWidthDp = getResources().getConfiguration().screenWidthDp;
-        // רוחב קבוע (לא weight=1 בתוך HorizontalScrollView, אחרת כל הכפתורים
-        // מצטמצמים לרוחב אפס) - מספיק רחב לנוחות מקשים, אבל מצטמצם מעט
-        // במסכים צרים כדי שיהיו נראים כמה שיותר כפתורים בבת אחת.
-        int buttonWidthDp = screenWidthDp > 0 && screenWidthDp < 260 ? 40 : 48;
-        int buttonWidthPx = (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, buttonWidthDp, getResources().getDisplayMetrics());
 
         int todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        row1.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        row2Lp.topMargin = 6;
+        row2.setLayoutParams(row2Lp);
 
         for (int i = 0; i < 7; i++) {
             final int calendarDow = i + 1; // Calendar.SUNDAY == 1
             Button b = new Button(this);
+            b.setId(View.generateViewId()); // נדרש כדי ש-setNextFocusRightId/LeftId יוכלו לאתר את הכפתור
             b.setText(letters[i]);
             b.setTextSize(13);
             b.setPadding(2, 8, 2, 8);
@@ -124,7 +137,7 @@ public class MainActivity extends Activity {
                 b.setTypeface(b.getTypeface(), Typeface.BOLD);
             }
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    buttonWidthPx, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             lp.setMargins(3, 0, 3, 0);
             b.setLayoutParams(lp);
             b.setOnClickListener(new View.OnClickListener() {
@@ -134,21 +147,65 @@ public class MainActivity extends Activity {
                     refresh();
                 }
             });
-            dayRow.addView(b);
+            // מציג חיווי ברור (אותו עיצוב שימוש בכפתורי הגדרות/זמנים/רענון)
+            // כשהכפתור מקבל פוקוס ממקשי הניווט - ראו updateDaySelectionColors.
+            b.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    updateDaySelectionColors();
+                }
+            });
+            (i < 4 ? row1 : row2).addView(b);
             dayButtons.add(b);
         }
-        updateDaySelectionColors();
+
+        dayRow.addView(row1);
+        dayRow.addView(row2);
+
+        // שרשור ניווט ימין/שמאל בתוך כל שורה. הפריסה RTL הופכת אוטומטית את
+        // הסדר החזותי של ילדי LinearLayout אופקי - כך שהכפתור הראשון שנוסף
+        // (א) מוצג הכי מימין, והאחרון בשורה מוצג הכי משמאל. nextFocusRight/Left
+        // הם לפי כיוון פיזי בפועל על המסך ולא הופכים אוטומטית עם RTL - לכן
+        // משורשרים כאן בהתאם למיקום החזותי בפועל.
+        chainRowFocus(row1);
+        chainRowFocus(row2);
     }
+
+    /** משרשר nextFocusRight/Left בין כפתורים עוקבים בשורה, לפי הסדר החזותי במסך RTL. */
+    private void chainRowFocus(LinearLayout row) {
+        int count = row.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View current = row.getChildAt(i);
+            if (i > 0) current.setNextFocusRightId(row.getChildAt(i - 1).getId());
+            if (i < count - 1) current.setNextFocusLeftId(row.getChildAt(i + 1).getId());
+        }
+    }
+
+    private static final int TODAY_INDICATOR_COLOR = 0xFFFFD54F; // צהוב-זהוב בולט - חיווי "היום" גם כשלא ממוקד/נבחר
 
     private void updateDaySelectionColors() {
         int accent = resolveAttrColor(R.attr.colorAccent);
         int card = resolveAttrColor(R.attr.colorBgCard);
         int mainText = resolveAttrColor(R.attr.colorTextMain);
+        int todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
         for (int i = 0; i < dayButtons.size(); i++) {
             boolean selected = (i + 1) == selectedDayOfWeek;
+            boolean isToday = (i + 1) == todayDow;
             Button b = dayButtons.get(i);
-            b.getBackground().mutate().setColorFilter(selected ? accent : card, PorterDuff.Mode.SRC_IN);
-            b.setTextColor(selected ? 0xFFFFFFFF : mainText);
+            if (b.isFocused()) {
+                // כשיש פוקוס מקשי ניווט על הכפתור - משאירים את הצבע המובנה
+                // של מצב ה-focused בתוך bg_round_button (טורקיז + מסגרת לבנה,
+                // אותו חיווי שמוצג בכפתורי הגדרות/זמנים/רענון), במקום לדרוס
+                // אותו בצבע אחיד - אחרת אין שום סימן איזה כפתור יום מסומן כרגע.
+                b.getBackground().mutate().clearColorFilter();
+                b.setTextColor(0xFFFFFFFF);
+            } else {
+                b.getBackground().mutate().setColorFilter(selected ? accent : card, PorterDuff.Mode.SRC_IN);
+                // "היום" מקבל צבע טקסט קבוע ובולט (זהוב) בנוסף לגופן המודגש
+                // שכבר מוגדר ב-buildDayRow - חיווי שרואים תמיד כשלא ממוקדים
+                // עליו, גם אם הוא לא היום שנבחר לצפייה כרגע.
+                b.setTextColor(isToday ? TODAY_INDICATOR_COLOR : (selected ? 0xFFFFFFFF : mainText));
+            }
         }
     }
 

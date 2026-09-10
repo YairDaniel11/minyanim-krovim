@@ -22,20 +22,17 @@
         android:visibility="gone"
         android:layout_marginBottom="6dp" />
 
-    <!-- שורת ימים - בתוך HorizontalScrollView כדי שתמיד תהיה נגישה גם
-         במסכים צרים מאוד (מכשירי מקשים), בלי להיחתך או להצטופף. -->
-    <HorizontalScrollView
+    <!-- שורת ימים - שתי שורות קבועות (4+3) שממלאות את כל רוחב המסך
+         (layout_weight, לא רוחב קבוע) במקום HorizontalScrollView. כך כל 7
+         הימים, כולל שבת, תמיד גלויים במלואם גם במסכים צרים מאוד
+         (מכשירי מקשים) - בלי צורך בגלילה אופקית, שלא עובדת בצורה אמינה
+         בניווט מקשים פיזיים. -->
+    <LinearLayout
+        android:id="@+id/dayRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:layout_marginBottom="10dp">
-
-        <LinearLayout
-            android:id="@+id/dayRow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
+        android:orientation="vertical"
+        android:layout_marginBottom="10dp" />
 
     <TextView
         android:id="@+id/tvNextTitle"
@@ -112,38 +109,49 @@
         android:orientation="horizontal"
         android:layout_marginTop="10dp">
 
+        <!-- הערה על ניווט מקשים: הפריסה RTL, ו-LinearLayout אופקי הופך אוטומטית
+             את הסדר החזותי של הילדים במצב RTL - כך שבפועל (למרות סדר ה-XML)
+             btnSettings מוצג הכי מימין, btnZmanim באמצע, btnRefresh הכי משמאל.
+             nextFocusLeft/Right הם לפי כיוון פיזי על המסך ואינם הופכים אוטומטית
+             עם RTL, לכן הם מוגדרים כאן בהתאם למיקום החזותי בפועל ולא לסדר ב-XML. -->
         <Button
             android:id="@+id/btnSettings"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_round_button"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_round_button_compact"
             android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="1"
             android:text="@string/btn_settings"
-            android:nextFocusRight="@id/btnZmanim" />
+            android:nextFocusLeft="@id/btnZmanim" />
 
         <Button
             android:id="@+id/btnZmanim"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_round_button"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_round_button_compact"
             android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="1"
             android:text="@string/btn_zmanim"
-            android:nextFocusLeft="@id/btnSettings"
-            android:nextFocusRight="@id/btnRefresh" />
+            android:nextFocusRight="@id/btnSettings"
+            android:nextFocusLeft="@id/btnRefresh" />
 
         <Button
             android:id="@+id/btnRefresh"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/bg_round_button"
+            android:background="@drawable/bg_round_button_compact"
             android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="1"
             android:text="@string/btn_refresh"
-            android:nextFocusLeft="@id/btnZmanim" />
+            android:nextFocusRight="@id/btnZmanim" />
     </LinearLayout>
 
 </LinearLayout>

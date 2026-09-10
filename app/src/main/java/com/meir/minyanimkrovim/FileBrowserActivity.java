@@ -7,7 +7,6 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -66,12 +65,12 @@ public class FileBrowserActivity extends Activity {
 
         tvPath = (TextView) findViewById(R.id.tvCurrentPath);
         listView = (ListView) findViewById(R.id.listFiles);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                onEntryClicked(position);
-            }
-        });
+        // הערה: לא משתמשים כאן ב-listView.setOnItemClickListener - שורת
+        // הפריט (list_item_file) מוגדרת focusable="true" clickable="true"
+        // (כדי לקבל חיווי פוקוס ברור למקשי ניווט), ובגלל זה היא "בולעת" את
+        // הלחיצה/לחיצת Enter בעצמה במקום להעביר אותה ל-onItemClick של
+        // הרשימה - זה בדיוק מה שגרם ללחיצה על "אחסון פנימי"/"כרטיס זיכרון"
+        // לא לעשות כלום. המאזין מחובר ישירות לכל שורה בתוך FileAdapter.getView.
 
         showRoots();
     }
@@ -243,6 +242,12 @@ public class FileBrowserActivity extends Activity {
                 @Override
                 public void onFocusChange(View v, boolean hasFocus) {
                     v.setBackgroundColor(hasFocus ? withAlpha(accentColor, 0x55) : 0x00000000);
+                }
+            });
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onEntryClicked(position);
                 }
             });
 

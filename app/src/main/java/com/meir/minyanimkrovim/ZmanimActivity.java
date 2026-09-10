@@ -6,13 +6,18 @@ import android.text.format.DateFormat;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -25,6 +30,7 @@ public class ZmanimActivity extends Activity {
     private TextView tvDate, tvEmpty, tvSource;
     private LinearLayout zmanimList;
     private EditText etLat, etLon;
+    private Spinner spinnerCity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +45,8 @@ public class ZmanimActivity extends Activity {
         zmanimList = (LinearLayout) findViewById(R.id.zmanimList);
         etLat = (EditText) findViewById(R.id.etLat);
         etLon = (EditText) findViewById(R.id.etLon);
+        spinnerCity = (Spinner) findViewById(R.id.spinnerCity);
+        setupCitySpinner();
 
         Button btnSave = (Button) findViewById(R.id.btnSaveLocation);
         btnSave.setOnClickListener(new View.OnClickListener() {
@@ -50,6 +58,34 @@ public class ZmanimActivity extends Activity {
             etLat.setText(formatCoord(manual.lat));
             etLon.setText(formatCoord(manual.lon));
         }
+    }
+
+    /** ממלא את הרשימה הנפתחת בערים המוגדרות מראש; בחירת עיר ממלאת ושומרת את הקואורדינטות. */
+    private void setupCitySpinner() {
+        List<String> labels = new ArrayList<>();
+        labels.add(getString(R.string.zmanim_city_picker_prompt));
+        for (DefaultCities.City city : DefaultCities.ALL) {
+            labels.add(city.name);
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerCity.setAdapter(adapter);
+
+        spinnerCity.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position <= 0) return; // "-- בחירת עיר --"
+                DefaultCities.City city = DefaultCities.ALL[position - 1];
+                etLat.setText(formatCoord(city.lat));
+                etLon.setText(formatCoord(city.lon));
+                LocationPrefs.setManualCoords(ZmanimActivity.this, city.lat, city.lon);
+                Toast.makeText(ZmanimActivity.this, R.string.zmanim_location_saved, Toast.LENGTH_SHORT).show();
+                refresh();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { }
+        });
     }
 
     @Override
