@@ -65,12 +65,25 @@ public class FileBrowserActivity extends Activity {
 
         tvPath = (TextView) findViewById(R.id.tvCurrentPath);
         listView = (ListView) findViewById(R.id.listFiles);
-        // הערה: לא משתמשים כאן ב-listView.setOnItemClickListener - שורת
-        // הפריט (list_item_file) מוגדרת focusable="true" clickable="true"
-        // (כדי לקבל חיווי פוקוס ברור למקשי ניווט), ובגלל זה היא "בולעת" את
-        // הלחיצה/לחיצת Enter בעצמה במקום להעביר אותה ל-onItemClick של
-        // הרשימה - זה בדיוק מה שגרם ללחיצה על "אחסון פנימי"/"כרטיס זיכרון"
-        // לא לעשות כלום. המאזין מחובר ישירות לכל שורה בתוך FileAdapter.getView.
+        // הערה: יש כאן שני נתיבים עצמאיים לאותה פעולה (onEntryClicked),
+        // כי אין דרך לדעת מראש דרך איזה מהם ROM כשר נתון ינתב לחיצת
+        // OK/מגע - וזו בדיוק הבעיה שגרמה לבאג הקודם:
+        //  1) row.setOnClickListener בתוך FileAdapter.getView - מטפל
+        //     במכשירים שבהם השורה הממוקדת/clickable="true" מקבלת את
+        //     האירוע ישירות (זה מה שתוקן בפעם הקודמת).
+        //  2) listView.setOnItemClickListener כאן - מטפל במכשירים שבהם
+        //     ה-ROM מיירט D-pad/OK ברמת ה-AdapterView ובוחר Item במקום
+        //     להעביר פוקוס/קליק לשורה הבודדת (המקרה שלא טופל קודם וגרם
+        //     ל"אין תגובה" בכלל).
+        // שתי הדרכים קוראות לאותה onEntryClicked(position) לפי אותו
+        // position, אז אין סיכון לכפילות תוצאה - הלחיצה תמיד תיתפס
+        // באחת מהן, וסוגרת/מנווטת את אותו entry בכל מקרה.
+        listView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                onEntryClicked(position);
+            }
+        });
 
         showRoots();
     }
