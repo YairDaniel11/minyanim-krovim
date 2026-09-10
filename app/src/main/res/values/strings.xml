@@ -78,15 +78,6 @@
     <string name="notif_channel_name">התראות מניינים</string>
     <string name="notif_title_prefix">מניין קרוב</string>
 
-    <string name="file_browser_title">בחירת קובץ מניינים</string>
-    <string name="file_browser_up">.. (תיקייה קודמת)</string>
-    <string name="file_browser_back_to_roots">.. (חזרה לרשימת האחסונים)</string>
-    <string name="file_browser_cannot_open">לא ניתן לפתוח את התיקייה הזו</string>
-    <string name="file_browser_permission_denied">נדרשת הרשאת גישה לאחסון כדי לעיין בקבצים</string>
-    <string name="file_browser_internal_storage">📱 אחסון פנימי</string>
-    <string name="file_browser_external_storage">💾 כרטיס זיכרון (אחסון חיצוני)</string>
-    <string name="file_browser_roots_title">בחרו מיקום אחסון</string>
-
     <string name="time_picker_title">קביעת שעת התראה</string>
     <string name="time_picker_hour">שעה</string>
     <string name="time_picker_minute">דקה</string>

@@ -3,7 +3,6 @@ package com.meir.minyanimkrovim;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,8 +21,6 @@ import android.widget.Toast;
 public class SettingsActivity extends Activity {
 
     private static final int REQUEST_CODE_OPEN_FILE = 1001;
-    private static final int REQUEST_CODE_BROWSE_FILE = 1003;
-    private static final int REQUEST_CODE_STORAGE_PERMISSION = 1004;
 
     private CheckBox cbShacharit, cbMincha, cbArvit;
     private Button btnTimeShacharit, btnTimeMincha, btnTimeArvit, btnBattery, btnLoadFile;
@@ -173,15 +170,16 @@ public class SettingsActivity extends Activity {
         Toast.makeText(this, R.string.settings_ignore_battery, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * הסייר המותאם אישית (FileBrowserActivity) הוסר לגמרי - הוא לא הגיב
+     * בכלל במכשירים כשרים מסוימים (ה-ROM לא ניתב אליו לחיצת OK/מגע בשום
+     * דרך שניתן היה לזהות מבחוץ). במקום זאת פשוט פותחים תמיד את בורר
+     * הקבצים של המערכת (ACTION_GET_CONTENT) - זו האפליקציה שהספק של
+     * הטלפון בנה בעצמו, כך שהיא זו שיודעת לטפל נכון בקלט של המכשיר שלו.
+     * אם אין בכלל אפליקציית ניהול קבצים מותקנת במכשיר - startActivityForResult
+     * יזרוק ActivityNotFoundException, ואז מוצגת הודעה למשתמש במקום קריסה.
+     */
     private void openFilePicker() {
-        if (Build.VERSION.SDK_INT < 29 /* לפני scoped storage */) {
-            openInternalFileBrowser();
-        } else {
-            openSystemFilePicker();
-        }
-    }
-
-    private void openSystemFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -194,29 +192,6 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void openInternalFileBrowser() {
-        if (Build.VERSION.SDK_INT >= 23
-                && checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_CODE_STORAGE_PERMISSION);
-            return;
-        }
-        startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startActivityForResult(new Intent(this, FileBrowserActivity.class), REQUEST_CODE_BROWSE_FILE);
-            } else {
-                Toast.makeText(this, R.string.file_browser_permission_denied, Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -224,10 +199,6 @@ public class SettingsActivity extends Activity {
             Uri uri = data.getData();
             if (uri == null) return;
             importFile(uri);
-        } else if (requestCode == REQUEST_CODE_BROWSE_FILE && resultCode == Activity.RESULT_OK && data != null) {
-            String path = data.getStringExtra(FileBrowserActivity.EXTRA_SELECTED_PATH);
-            if (path == null) return;
-            importFile(Uri.fromFile(new java.io.File(path)));
         }
     }
 
