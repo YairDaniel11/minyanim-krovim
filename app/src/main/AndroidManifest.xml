@@ -8,6 +8,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- נדרשת רק לדפדפן הקבצים הפנימי (FileBrowserActivity), שמופעל אך ורק
+         במכשירים ישנים (SDK < 29) שבהם הבורר הרגיל של המערכת לא חושף
+         עיון באחסון המקומי, או שאין בהם בכלל אפליקציית ניהול קבצים -
+         ראו SettingsActivity.openFilePicker(). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:allowBackup="true"
@@ -35,6 +41,11 @@
             android:name=".ZmanimActivity"
             android:exported="false"
             android:label="@string/zmanim_title" />
+
+        <activity
+            android:name=".FileBrowserActivity"
+            android:exported="false"
+            android:label="@string/file_browser_title" />
 
 
         <receiver
