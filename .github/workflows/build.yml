@@ -35,8 +35,10 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # ה-SDK מותקן מראש ב-ubuntu-latest (הפעולה android-actions/setup-android נכשלה על 'sdkmanager tools');
+      # מספיק לאשר רישיונות
+      - name: Accept Android SDK licenses
+        run: yes | "$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | tail -1)" --licenses > /dev/null || true
 
       - name: Bump version (versionCode/versionName)
         run: |
