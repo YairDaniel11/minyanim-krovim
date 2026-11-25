@@ -73,8 +73,10 @@ jobs:
       - name: Verify signature
         if: env.HAS_SIGNING == 'true'
         run: |
-          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -1)
-          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/*.apk | grep -E "Signer #1 certificate (DN|SHA-256)"
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APKSIGNER=$(find "$SDK/build-tools" -name apksigner | sort | tail -1)
+          echo "apksigner: $APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/release/*.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
