@@ -1,0 +1,50 @@
+name: Weekly minyanim data
+
+# כל שבוע: מושך את נתוני המניינים העדכניים ישירות מנדרים פלוס (כ-15 דקות, בקצב מנומס),
+# ממיר ל-data/minyanim-israel.json, ואם יש שינוי - מעדכן את הקובץ ב-main
+# (משם האפליקציה מורידה אותו) ומפעיל בנייה חדשה של APK חתום עם הנתונים מוטמעים.
+on:
+  schedule:
+    # יום שני 06:00 UTC (בבוקר בישראל)
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: weekly-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download latest data from Nedarim Plus and convert
+        run: python3 tools/update_minyanim.py
+
+      - name: Commit if changed
+        id: commit
+        run: |
+          if git diff --quiet -- data/minyanim-israel.json; then
+            echo "No data change."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/minyanim-israel.json
+            git commit -m "עדכון נתוני מניינים ($(date -u +%F))"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # push מתוך Actions לא מפעיל workflows אחרים, לכן מפעילים את הבנייה במפורש
+      - name: Trigger signed build
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build.yml --ref main

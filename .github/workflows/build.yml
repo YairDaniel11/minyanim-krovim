@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  # מופעל גם ידנית, וגם אוטומטית ע"י weekly-data.yml אחרי עדכון נתוני המניינים
   workflow_dispatch:
 
 permissions:
@@ -13,6 +14,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # פנייה ל-Secrets אינה זמינה ב-PR מ-fork; בלעדיהם נבנה APK דיבאג בלבד
+      HAS_SIGNING: ${{ secrets.KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,23 +46,49 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build debug APK
+      - name: Data date embedded in this build
+        id: data
+        run: echo "generated=$(python3 -c "import json;print(json.load(open('data/minyanim-israel.json',encoding='utf-8'))['generated'])")" >> "$GITHUB_OUTPUT"
+
+      # --- חתימה קבועה (keystore ב-GitHub Secrets) ---
+      - name: Restore signing keystore
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "MINYAN_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "MINYAN_KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "MINYAN_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "MINYAN_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        if: env.HAS_SIGNING == 'true'
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build debug APK (no signing secrets - pull request from a fork)
+        if: env.HAS_SIGNING != 'true'
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Verify signature
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/*.apk | grep -E "Signer #1 certificate (DN|SHA-256)"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: minyanim-krovim-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: minyanim-krovim-apk
+          path: app/build/outputs/apk/*/*.apk
 
       - name: Create GitHub Release with APK
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request' && env.HAS_SIGNING == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: "מניינים קרובים - build #${{ github.run_number }}"
           body: |
-            APK דיבאג שנבנה אוטומטית מקומיט ${{ github.sha }}.
+            APK חתום (חתימה קבועה - מתעדכן מעל הגרסה הקודמת בלי הסרה).
             גרסה: versionCode ${{ github.run_number }}.
-            לא APK חתום ל-release רשמי (release חתום דורש keystore נפרד).
-          files: app/build/outputs/apk/debug/*.apk
+            נתוני המניינים המוטמעים: ${{ steps.data.outputs.generated }}.
+            נבנה מקומיט ${{ github.sha }}.
+          files: app/build/outputs/apk/release/*.apk

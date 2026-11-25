@@ -232,6 +232,10 @@ public class MainActivity extends Activity {
             tvLocation.setVisibility(View.GONE);
         }
 
+        if (MinyanDataStore.needsAreaSelection(this)) {
+            showEmpty(getString(R.string.label_choose_area));
+            return;
+        }
         if (!MinyanDataStore.hasData(this)) {
             showEmpty(getString(R.string.label_no_data));
             return;

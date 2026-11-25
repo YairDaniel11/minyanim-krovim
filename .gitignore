@@ -1,0 +1,9 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+# מפתחות חתימה - לעולם לא במאגר (החתימה נעשית מ-GitHub Secrets)
+*.keystore
+*.jks
+signing-info.txt

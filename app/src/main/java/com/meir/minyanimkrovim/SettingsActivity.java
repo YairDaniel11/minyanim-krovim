@@ -45,6 +45,10 @@ public class SettingsActivity extends Activity {
         btnBattery = (Button) findViewById(R.id.btnBattery);
         rgTheme = (RadioGroup) findViewById(R.id.rgTheme);
 
+        findViewById(R.id.btnArea).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { startActivity(new Intent(SettingsActivity.this, AreaActivity.class)); }
+        });
+
         btnLoadFile.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { openFilePicker(); }
         });

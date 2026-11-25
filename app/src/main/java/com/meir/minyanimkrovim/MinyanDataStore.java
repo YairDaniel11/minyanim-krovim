@@ -8,6 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +17,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,10 +46,22 @@ import java.util.regex.Pattern;
  *  - מערך של שניים, אחד מהם זמן תקין (קבוע או יחסי) והשני תיאור הלכתי
  *    חופשי - נכנס כרשומה אחת עם הזמן והתיאור כהערה נלווית.
  *  - מערך עם כמה זמנים תקינים - כל אחד הופך לרשומה נפרדת.
+ *  - בתוך מערך אפשר גם אובייקט {"t":"HH:mm","n":"הערה"} - שעה עם הערה משלה.
+ *
+ * מצב "נתונים ארציים" (ברירת המחדל): קובץ אחד לכל הארץ (assets/minyanim-israel.json,
+ * או גרסה חדשה יותר שהורדה מ-GitHub), שבו לכל בית כנסת יש גם id, address, lat, lon.
+ * מהקובץ נבחרים רק בתי הכנסת שבאזור שהמשתמש בחר (AreaPrefs), בלי אלה שהוא סימן להתעלמות.
  */
 public class MinyanDataStore {
 
     private static final String FILE_NAME = "minyanim_data.json";
+    /** גרסה ארצית שהורדה מ-GitHub (אם חדשה יותר מזו שבתוך האפליקציה). */
+    static final String NATIONAL_FILE = "minyanim_national.json";
+    /** גרסה ארצית שמוטמעת באפליקציה בזמן הבנייה. */
+    static final String NATIONAL_ASSET = "minyanim-israel.json";
+
+    private static JSONObject cachedNational;
+    private static String cachedNationalKey;
 
     // "שקיעה"/"שקיעה-20"/"shkia+10" וכו' - קבוצה 1: שם הטוקן, קבוצה 2: +/- מספר (אופציונלי)
     private static final Pattern SUN_TOKEN = Pattern.compile(
@@ -80,26 +95,195 @@ public class MinyanDataStore {
         } finally {
             out.close();
         }
+        // טעינת קובץ אישי = המשתמש רוצה להשתמש בו (אפשר לחזור לנתונים הארציים בהגדרות)
+        AreaPrefs.setMode(context, AreaPrefs.MODE_FILE);
     }
 
-    public static boolean hasData(Context context) {
+    /** האם נטען אי-פעם קובץ אישי (minyanim_data.json). */
+    public static boolean hasPersonalFile(Context context) {
         return context.getFileStreamPath(FILE_NAME).exists();
     }
 
-    private static JSONObject readRootJson(Context context) throws IOException, JSONException {
-        InputStream in = context.openFileInput(FILE_NAME);
+    /** יש מה להציג: במצב ארצי תמיד (הנתונים מוטמעים באפליקציה); במצב קובץ - רק אם נטען קובץ. */
+    public static boolean hasData(Context context) {
+        return AreaPrefs.isNational(context) || hasPersonalFile(context);
+    }
+
+    private static String readAll(InputStream in) throws IOException {
         StringBuilder sb = new StringBuilder();
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line).append('\n');
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"), 16384);
+            char[] buf = new char[16384];
+            int n;
+            while ((n = reader.read(buf)) > 0) sb.append(buf, 0, n);
         } finally {
             in.close();
         }
-        return new JSONObject(sb.toString());
+        return sb.toString();
+    }
+
+    private static JSONObject readRootJson(Context context) throws IOException, JSONException {
+        if (AreaPrefs.isNational(context)) return readNationalRoot(context);
+        return new JSONObject(readAll(context.openFileInput(FILE_NAME)));
+    }
+
+    // ------------------------------------------------------------------ נתונים ארציים
+
+    private static final Pattern GENERATED = Pattern.compile("\"generated\"\\s*:\\s*\"([^\"]+)\"");
+
+    /** "generated" (תאריך YYYY-MM-DD) מתוך תחילת קובץ ארצי - המפתח נכתב ראשון בקובץ, אז מספיק לקרוא כמה בתים. */
+    static String readGenerated(InputStream in) {
+        try {
+            byte[] head = new byte[300];
+            int total = 0, n;
+            while (total < head.length && (n = in.read(head, total, head.length - total)) > 0) total += n;
+            Matcher m = GENERATED.matcher(new String(head, 0, total, "UTF-8"));
+            return m.find() ? m.group(1) : "";
+        } catch (Exception e) {
+            return "";
+        } finally {
+            try { in.close(); } catch (IOException ignored) { }
+        }
+    }
+
+    /** תאריך הנתונים הארציים שבתוך האפליקציה ("" אם חסר). */
+    public static String embeddedGenerated(Context context) {
+        try {
+            return readGenerated(context.getAssets().open(NATIONAL_ASSET));
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    /** תאריך הנתונים שהורדו ("" אם לא הורדו). */
+    public static String downloadedGenerated(Context context) {
+        File f = context.getFileStreamPath(NATIONAL_FILE);
+        if (!f.exists()) return "";
+        try {
+            return readGenerated(new java.io.FileInputStream(f));
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    /** תאריך הנתונים הארציים שבשימוש בפועל (החדש מבין המוטמע וההורדה). */
+    public static String nationalGenerated(Context context) {
+        String a = embeddedGenerated(context);
+        String d = downloadedGenerated(context);
+        return d.compareTo(a) > 0 ? d : a;
+    }
+
+    private static synchronized JSONObject readNationalRoot(Context context) throws IOException, JSONException {
+        String dl = downloadedGenerated(context);
+        boolean useDownloaded = dl.length() > 0 && dl.compareTo(embeddedGenerated(context)) > 0;
+        File f = context.getFileStreamPath(NATIONAL_FILE);
+        String key = useDownloaded ? "dl:" + f.lastModified() + ":" + f.length() : "asset";
+        if (cachedNational != null && key.equals(cachedNationalKey)) return cachedNational;
+        InputStream in = useDownloaded ? new java.io.FileInputStream(f) : context.getAssets().open(NATIONAL_ASSET);
+        JSONObject root = new JSONObject(readAll(in));
+        cachedNational = root;
+        cachedNationalKey = key;
+        return root;
+    }
+
+    /** בודק קובץ שהורד (טקסט JSON) ושומר אותו אם הוא תקין וחדש יותר ממה שיש. מחזיר true אם נשמר. */
+    public static synchronized boolean saveDownloadedNational(Context context, String json) throws IOException {
+        JSONObject root;
+        try {
+            root = new JSONObject(json);
+        } catch (JSONException e) {
+            throw new IOException("הקובץ שהורד אינו JSON תקין");
+        }
+        JSONArray shuls = root.optJSONArray("shuls");
+        String gen = root.optString("generated", "");
+        if (shuls == null || shuls.length() < 100 || gen.length() == 0) {
+            throw new IOException("הקובץ שהורד אינו קובץ נתונים תקין");
+        }
+        if (gen.compareTo(nationalGenerated(context)) <= 0) return false; // כבר מעודכנים
+        FileOutputStream out = context.openFileOutput(NATIONAL_FILE, Context.MODE_PRIVATE);
+        try {
+            out.write(json.getBytes("UTF-8"));
+        } finally {
+            out.close();
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ בתי כנסת באזור
+
+    /** בית כנסת מהנתונים הארציים - לרשימות הבחירה. */
+    public static class ShulInfo {
+        public final String id, name, address;
+        public final double lat, lon;
+        public double distanceKm;
+        ShulInfo(String id, String name, String address, double lat, double lon) {
+            this.id = id; this.name = name; this.address = address; this.lat = lat; this.lon = lon;
+        }
+    }
+
+    /** מרחק (ק"מ) בין שתי נקודות - האברסין. */
+    public static double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 6371.0 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    private static ShulInfo toInfo(JSONObject shul) {
+        if (!shul.has("lat") || !shul.has("lon")) return null;
+        return new ShulInfo(shul.optString("id", ""), shul.optString("name", ""),
+                shul.optString("address", ""), shul.optDouble("lat"), shul.optDouble("lon"));
+    }
+
+    /** כל בתי הכנסת בנתונים הארציים (לחיפוש בחירת מרכז אזור). */
+    public static List<ShulInfo> listAllNational(Context context) throws IOException, JSONException {
+        List<ShulInfo> out = new ArrayList<>();
+        JSONArray shuls = readNationalRoot(context).optJSONArray("shuls");
+        if (shuls == null) return out;
+        for (int i = 0; i < shuls.length(); i++) {
+            ShulInfo si = toInfo(shuls.getJSONObject(i));
+            if (si != null) out.add(si);
+        }
+        return out;
+    }
+
+    /** בתי הכנסת שברדיוס מהאזור שנבחר (כולל אלה שסומנו להתעלמות), ממוינים לפי מרחק. */
+    public static List<ShulInfo> listInArea(Context context) throws IOException, JSONException {
+        List<ShulInfo> out = new ArrayList<>();
+        double[] c = AreaPrefs.getAreaCenter(context);
+        if (c == null) return out;
+        double radius = AreaPrefs.getRadiusKm(context);
+        for (ShulInfo si : listAllNational(context)) {
+            si.distanceKm = distanceKm(c[0], c[1], si.lat, si.lon);
+            if (si.distanceKm <= radius) out.add(si);
+        }
+        Collections.sort(out, new Comparator<ShulInfo>() {
+            @Override public int compare(ShulInfo a, ShulInfo b) { return Double.compare(a.distanceKm, b.distanceKm); }
+        });
+        return out;
+    }
+
+    /** מצב ארצי בלי אזור שנבחר - צריך להציג למשתמש הנחיה לבחור אזור. */
+    public static boolean needsAreaSelection(Context context) {
+        return AreaPrefs.isNational(context) && !AreaPrefs.hasArea(context);
+    }
+
+    /** האם בית הכנסת הזה (במצב ארצי) באזור הנבחר ולא ברשימת ההתעלמות. */
+    private static boolean isShulVisible(JSONObject shul, double[] center, double radiusKm, Set<String> hidden) {
+        if (hidden.contains(shul.optString("id", ""))) return false;
+        if (!shul.has("lat") || !shul.has("lon")) return false;
+        return distanceKm(center[0], center[1], shul.optDouble("lat"), shul.optDouble("lon")) <= radiusKm;
     }
 
     public static String loadLocation(Context context) {
+        if (AreaPrefs.isNational(context)) {
+            if (!AreaPrefs.hasArea(context)) return "";
+            float r = AreaPrefs.getRadiusKm(context);
+            String km = (r == Math.floor(r)) ? String.valueOf((int) r) : String.valueOf(r);
+            return AreaPrefs.getAreaName(context) + " (" + km + " ק\"מ)";
+        }
         if (!hasData(context)) return "";
         try {
             return readRootJson(context).optString("location", "");
@@ -108,8 +292,9 @@ public class MinyanDataStore {
         }
     }
 
-    /** קואורדינטות מהקובץ שנטען (אם יש) - null אם אין קובץ/אין שדה coordinates. */
+    /** קואורדינטות מהקובץ שנטען (אם יש) - null אם אין קובץ/אין שדה coordinates. במצב ארצי: מרכז האזור שנבחר. */
     public static double[] loadCoordinatesFromFile(Context context) {
+        if (AreaPrefs.isNational(context)) return AreaPrefs.getAreaCenter(context);
         if (!hasData(context)) return null;
         try {
             JSONObject coords = readRootJson(context).optJSONObject("coordinates");
@@ -133,14 +318,22 @@ public class MinyanDataStore {
         List<MinyanEntry> result = new ArrayList<>();
         if (!hasData(context)) return result;
 
+        boolean national = AreaPrefs.isNational(context);
+        double[] center = national ? AreaPrefs.getAreaCenter(context) : null;
+        if (national && center == null) return result; // עוד לא נבחר אזור
+        double radiusKm = AreaPrefs.getRadiusKm(context);
+        Set<String> hidden = national ? AreaPrefs.getHidden(context) : new HashSet<String>();
+
         JSONObject root = readRootJson(context);
         JSONArray shuls = root.optJSONArray("shuls");
         if (shuls == null) return result;
 
-        SunTimes.Result sun = computeSunTimes(root, referenceDate);
+        // בנתונים הארציים כל השעות קבועות, אז שקיעה/נץ לא נחוצים; בקובץ אישי - לפי coordinates שבו
+        SunTimes.Result sun = national ? null : computeSunTimes(root, referenceDate);
 
         for (int i = 0; i < shuls.length(); i++) {
             JSONObject shul = shuls.getJSONObject(i);
+            if (national && !isShulVisible(shul, center, radiusKm, hidden)) continue;
             String name = shul.optString("name", "");
             String nusach = shul.isNull("nusach") ? "" : shul.optString("nusach", "");
             JSONObject prayers = shul.optJSONObject("prayers");
@@ -155,6 +348,7 @@ public class MinyanDataStore {
 
     /** true אם יש בקובץ לפחות זמן יחסי אחד לשקיעה/נץ אך אין קואורדינטות - כדי להציג אזהרה למשתמש. */
     public static boolean needsCoordinatesButMissing(Context context) {
+        if (AreaPrefs.isNational(context)) return false;
         try {
             JSONObject root = readRootJson(context);
             if (root.optJSONObject("coordinates") != null) return false;
@@ -216,9 +410,20 @@ public class MinyanDataStore {
             JSONArray arr = (JSONArray) raw;
             List<String> items = new ArrayList<>();
             for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.optJSONObject(i);
+                if (obj != null) {
+                    // {"t":"HH:mm","n":"הערה"} - שעה עם הערה משלה
+                    TimeResolution r = resolveTime(obj.optString("t", "").trim(), sun);
+                    if (r.minutes >= 0) {
+                        out.add(new MinyanEntry(name, nusach, prayerKey, dayType, r.minutes,
+                                firstNonEmpty(obj.optString("n", ""), r.autoNote)));
+                    }
+                    continue;
+                }
                 String s = arr.optString(i, "").trim();
                 if (s.length() > 0) items.add(s);
             }
+            if (items.isEmpty()) return;
             if (items.size() == 2) {
                 TimeResolution r0 = resolveTime(items.get(0), sun);
                 TimeResolution r1 = resolveTime(items.get(1), sun);

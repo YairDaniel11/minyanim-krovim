@@ -3,6 +3,8 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- הורדת קובץ הנתונים העדכני מ-GitHub (מסך "אזור ובתי כנסת") -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -41,6 +43,16 @@
             android:name=".ZmanimActivity"
             android:exported="false"
             android:label="@string/zmanim_title" />
+
+        <activity
+            android:name=".AreaActivity"
+            android:exported="false"
+            android:label="@string/area_title" />
+
+        <activity
+            android:name=".ShulListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
 
         <activity
             android:name=".FileBrowserActivity"

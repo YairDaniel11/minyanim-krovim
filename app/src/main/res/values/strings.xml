@@ -107,6 +107,44 @@
     <string name="zmanim_invalid_location">קואורדינטות לא תקינות</string>
     <string name="zmanim_using_file_location">המיקום מבוסס על קובץ המניינים שנטען</string>
 
+    <!-- אזור ונתונים ארציים -->
+    <string name="btn_area">אזור ובתי כנסת (נתונים ארציים)</string>
+    <string name="area_title">אזור ובתי כנסת</string>
+    <string name="area_none">לא נבחר אזור</string>
+    <string name="area_current">אזור: %1$s</string>
+    <string name="area_count">%1$d בתי כנסת באזור</string>
+    <string name="area_file_mode_note">כרגע מוצג קובץ אישי שנטען ידנית (לא הנתונים הארציים).</string>
+    <string name="area_choose_first">בחרו קודם עיר/שכונה</string>
+    <string name="area_pick_city">בחירת עיר / שכונה מהרשימה</string>
+    <string name="area_pick_by_shul">בחירת אזור לפי בית כנסת או כתובת (חיפוש)</string>
+    <string name="area_around">סביב %1$s</string>
+    <string name="area_radius">רדיוס חיפוש: %1$s ק\"מ</string>
+    <string name="area_radius_title">רדיוס חיפוש</string>
+    <string name="area_radius_option">%1$s ק\"מ</string>
+    <string name="area_manage_shuls">הצגה / התעלמות מבתי כנסת באזור</string>
+    <string name="area_data_header">נתוני המניינים</string>
+    <string name="area_data_info">תאריך הנתונים: %1$s (%2$s)</string>
+    <string name="area_data_src_embedded">מוטמעים באפליקציה</string>
+    <string name="area_data_src_downloaded">הורדו מ-GitHub</string>
+    <string name="area_download">הורדת נתונים עדכניים מ-GitHub</string>
+    <string name="area_downloading">מוריד...</string>
+    <string name="area_download_updated">הנתונים עודכנו (%1$s)</string>
+    <string name="area_download_uptodate">הנתונים כבר מעודכנים</string>
+    <string name="area_download_failed">ההורדה נכשלה: %1$s</string>
+    <string name="area_use_personal_file">מעבר לקובץ האישי שטענתי</string>
+    <string name="area_use_national">חזרה לנתונים הארציים</string>
+    <string name="area_credit">מקור הנתונים: נדרים פלוס – פרויקט זמני תפילות הארצי. השעות מוזנות ע\"י בתי הכנסת - מומלץ לוודא מול בית הכנסת.</string>
+    <string name="label_choose_area">לא נבחר אזור. היכנסו ל"הגדרות" ← "אזור ובתי כנסת" ובחרו עיר או שכונה.</string>
+
+    <string name="shul_list_title_manage">בתי כנסת באזור</string>
+    <string name="shul_list_title_pick">בחירת בית כנסת</string>
+    <string name="shul_list_search_hint">חיפוש לפי שם או כתובת</string>
+    <string name="shul_list_show_all">הצגת כולם (ביטול כל ההתעלמויות)</string>
+    <string name="shul_list_summary_manage">מוצגים %1$d מתוך %2$d. לחיצה על בית כנסת מציגה/מסתירה אותו.</string>
+    <string name="shul_list_summary_pick">%1$d בתי כנסת. לחיצה על בית כנסת קובעת אותו כמרכז האזור.</string>
+    <string name="dist_meters">%1$d מ\'</string>
+    <string name="dist_km">%1$.1f ק\"מ</string>
+
     <string name="zman_alot_hashachar">עלות השחר</string>
     <string name="zman_netz_hachama">הנץ החמה</string>
     <string name="zman_sof_zman_shema">סוף זמן קריאת שמע (גר"א)</string>

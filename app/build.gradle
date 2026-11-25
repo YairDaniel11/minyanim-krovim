@@ -12,10 +12,38 @@ android {
         versionName "1.0"
     }
 
+    // חתימה קבועה: ה-keystore וסיסמאותיו מגיעים ממשתני סביבה (ב-GitHub Actions - מ-Secrets).
+    // בלי המשתנים (בנייה מקומית) ה-release נחתם במפתח ה-debug, רק כדי שאפשר יהיה לבנות.
+    signingConfigs {
+        release {
+            def ksPath = System.getenv("MINYAN_KEYSTORE")
+            if (ksPath != null && new File(ksPath).exists()) {
+                storeFile file(ksPath)
+                storePassword System.getenv("MINYAN_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("MINYAN_KEY_ALIAS")
+                keyPassword System.getenv("MINYAN_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release.storeFile != null ? signingConfigs.release : signingConfigs.debug
         }
+    }
+
+    // נתוני המניינים הארציים (data/minyanim-israel.json) מוטמעים באפליקציה כ-asset.
+    // הקובץ מתעדכן אוטומטית כל שבוע ע"י .github/workflows/weekly-data.yml
+    sourceSets {
+        main {
+            assets.srcDirs += ['../data']
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 
     compileOptions {
