@@ -168,6 +168,8 @@
     <string name="settings_zmanim_header">זמני היום</string>
     <string name="settings_location_hint">המיקום קובע את זמני היום וההתראות לזמני היום. בלי מיקום ידני נעשה שימוש באזור שנבחר.</string>
     <string name="location_status_manual">מיקום נוכחי: %1$s, %2$s (הוגדר ידנית)</string>
+    <string name="location_status_named">מיקום נוכחי: %1$s</string>
+    <string name="zman_chatzot_layla">חצות הלילה</string>
     <string name="location_status_area">מיקום נוכחי: לפי האזור שנבחר</string>
     <string name="location_status_none">לא הוגדר מיקום</string>
     <string name="location_pick_city">בחירת עיר מהרשימה</string>

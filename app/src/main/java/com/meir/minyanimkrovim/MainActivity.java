@@ -286,7 +286,7 @@ public class MainActivity extends BaseActivity {
         } else {
             tvEmpty.setVisibility(View.GONE);
             listMinyanim.setVisibility(View.VISIBLE);
-            populateList(dayEntries, nowMinutes, highlighted);
+            populateList(dayEntries, isToday ? nowMinutes : -1, highlighted);
         }
     }
 
@@ -375,7 +375,12 @@ public class MainActivity extends BaseActivity {
                         prefix.length(), line.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             tvPrayer.setText(line);
-            tvStatus.setText(statusLine(entry, nowMinutes));
+            if (nowMinutes >= 0) {
+                tvStatus.setText(statusLine(entry, nowMinutes));
+                tvStatus.setVisibility(View.VISIBLE);
+            } else {
+                tvStatus.setVisibility(View.GONE); // יום אחר: אין "לפני X שעות"
+            }
 
             row.setBackgroundResource(cardDrawable);
             tvName.setTextColor(mainTextColor);

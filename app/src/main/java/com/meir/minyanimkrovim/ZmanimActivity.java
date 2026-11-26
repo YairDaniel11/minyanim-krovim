@@ -56,11 +56,7 @@ public class ZmanimActivity extends BaseActivity {
         tvEmpty.setVisibility(View.GONE);
         zmanimList.setVisibility(View.VISIBLE);
         tvSource.setVisibility(View.VISIBLE);
-        LocationPrefs.Coords manual = LocationPrefs.getManualCoords(this);
-        tvSource.setText(manual != null
-                ? getString(R.string.location_status_manual,
-                        String.format(Locale.US, "%.4f", manual.lat), String.format(Locale.US, "%.4f", manual.lon))
-                : getString(R.string.location_status_area));
+        tvSource.setText(LocationPrefs.statusText(this));
 
         zmanimList.removeAllViews();
         LayoutInflater inflater = getLayoutInflater();
@@ -74,6 +70,15 @@ public class ZmanimActivity extends BaseActivity {
             boolean isNext = !nextMarked && m >= 0 && m > nowMin;
             if (isNext) nextMarked = true;
             addZman(inflater, item.labelRes, m, isNext ? nextColor : mainColor, isNext ? nextColor : accentColor);
+        }
+        // חצות הלילה: אמצע הזמן בין שקיעת היום לנץ של מחר (גר"א)
+        Calendar tomorrow = (Calendar) now.clone();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        SunTimes.Zmanim zt = SunTimes.computeZmanim(coords.lat, coords.lon, tomorrow);
+        if (zt.valid) {
+            int night = (z.shkiatHachama + (zt.netzHachama + 1440 - z.shkiatHachama) / 2) % 1440;
+            boolean nextNight = !nextMarked;
+            addZman(inflater, R.string.zman_chatzot_layla, night, nextNight ? nextColor : mainColor, nextNight ? nextColor : accentColor);
         }
     }
 

@@ -155,7 +155,7 @@ public class SettingsActivity extends BaseActivity {
         Dialogs.list(this, getString(R.string.location_pick_city), labels, new Dialogs.OnChoose() {
                     @Override public void onChoose(int which) {
                         DefaultCities.City city = cities[which];
-                        LocationPrefs.setManualCoords(SettingsActivity.this, city.lat, city.lon);
+                        LocationPrefs.setManualCoords(SettingsActivity.this, city.lat, city.lon, city.name);
                         etLat.setText(formatCoord(city.lat));
                         etLon.setText(formatCoord(city.lon));
                         onLocationChanged();
@@ -182,15 +182,7 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void refreshLocationStatus() {
-        LocationPrefs.Coords manual = LocationPrefs.getManualCoords(this);
-        if (manual != null) {
-            tvLocationStatus.setText(getString(R.string.location_status_manual,
-                    formatCoord(manual.lat), formatCoord(manual.lon)));
-        } else if (LocationPrefs.getEffectiveCoords(this) != null) {
-            tvLocationStatus.setText(R.string.location_status_area);
-        } else {
-            tvLocationStatus.setText(R.string.location_status_none);
-        }
+        tvLocationStatus.setText(LocationPrefs.statusText(this));
     }
 
     private static String formatCoord(double value) {
