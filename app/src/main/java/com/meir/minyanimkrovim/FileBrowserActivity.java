@@ -1,6 +1,5 @@
 package com.meir.minyanimkrovim;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.TypedValue;
@@ -29,7 +28,7 @@ import java.util.List;
  * ולא בפריסת ברירת המחדל של המערכת - כדי למנוע מצב של טקסט לבן על רקע
  * לבן שקורה כשערכת ברירת המחדל של המערכת שונה מערכת הנושא של האפליקציה.
  */
-public class FileBrowserActivity extends Activity {
+public class FileBrowserActivity extends BaseActivity {
 
     public static final String EXTRA_SELECTED_PATH = "selected_path";
 
@@ -58,7 +57,6 @@ public class FileBrowserActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        ThemeUtil.applyTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_file_browser);
         setTitle(R.string.file_browser_title);
@@ -270,11 +268,5 @@ public class FileBrowserActivity extends Activity {
 
     private static int withAlpha(int color, int alpha) {
         return (color & 0x00FFFFFF) | (alpha << 24);
-    }
-
-    private int resolveAttrColor(int attrResId) {
-        TypedValue typedValue = new TypedValue();
-        getTheme().resolveAttribute(attrResId, typedValue, true);
-        return typedValue.data;
     }
 }

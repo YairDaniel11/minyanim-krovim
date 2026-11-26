@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_dark">#121212</color>
-    <color name="bg_card_dark">#1E1E1E</color>
-    <color name="text_main_dark">#F5F5F5</color>
-    <color name="text_secondary_dark">#AAAAAA</color>
+    <!-- Material 3 (ערכת צבעים טורקיז). d = כהה, l = בהיר. שמות הצבעים הישנים נשמרו לתאימות. -->
+    <color name="m3d_primary">#53DBC9</color>
+    <color name="m3d_primary_pressed">#3AB5A5</color>
+    <color name="m3d_on_primary">#00201C</color>
+    <color name="m3d_secondary_container">#2F4B47</color>
+    <color name="m3d_secondary_container_pressed">#3D5F5A</color>
+    <color name="m3d_on_secondary_container">#CDE8E2</color>
+    <color name="m3d_surface">#0F1514</color>
+    <color name="m3d_surface_container">#1C2321</color>
+    <color name="m3d_surface_container_high">#262E2C</color>
+    <color name="m3d_on_surface">#DDE4E1</color>
+    <color name="m3d_on_surface_variant">#BFC9C5</color>
+    <color name="m3d_outline">#899390</color>
+    <color name="m3d_error">#FF6B5E</color>
+    <color name="m3d_status">#0F1514</color>
 
-    <color name="bg_light">#FAFAFA</color>
-    <color name="bg_card_light">#FFFFFF</color>
-    <color name="text_main_light">#202020</color>
-    <color name="text_secondary_light">#666666</color>
+    <color name="m3l_primary">#006A60</color>
+    <color name="m3l_primary_pressed">#00574F</color>
+    <color name="m3l_on_primary">#FFFFFF</color>
+    <color name="m3l_secondary_container">#CCE8E2</color>
+    <color name="m3l_secondary_container_pressed">#B5D6CF</color>
+    <color name="m3l_on_secondary_container">#06201C</color>
+    <color name="m3l_surface">#F4FBF8</color>
+    <color name="m3l_surface_container">#E6EEEB</color>
+    <color name="m3l_surface_container_high">#DDE5E2</color>
+    <color name="m3l_on_surface">#171D1B</color>
+    <color name="m3l_on_surface_variant">#3F4946</color>
+    <color name="m3l_outline">#6F7976</color>
+    <color name="m3l_error">#BA1A1A</color>
+    <color name="m3l_status">#004D43</color>
+
+    <color name="bg_dark">#0F1514</color>
+    <color name="bg_card_dark">#1C2321</color>
+    <color name="text_main_dark">#DDE4E1</color>
+    <color name="text_secondary_dark">#BFC9C5</color>
+
+    <color name="bg_light">#F4FBF8</color>
+    <color name="bg_card_light">#E6EEEB</color>
+    <color name="text_main_light">#171D1B</color>
+    <color name="text_secondary_light">#3F4946</color>
 
     <color name="accent_teal">#00897B</color>
-    <color name="color_next">#2E7D32</color>
+    <color name="color_next">#BA1A1A</color>
 </resources>

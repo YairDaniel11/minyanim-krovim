@@ -68,6 +68,7 @@ public class AlarmScheduler {
                 scheduleNext(context, type, getMinutesOfDay(context, type));
             }
         }
+        ZmanAlarmStore.rescheduleAll(context);
     }
 
     /** מתזמן alarm יחיד ל-HH:mm הקרוב (היום אם עוד לא עבר, אחרת מחר). */
@@ -88,6 +89,11 @@ public class AlarmScheduler {
 
         PendingIntent pi = buildPendingIntent(context, type);
 
+        setAt(context, am, target.getTimeInMillis(), pi);
+    }
+
+    /** מתזמן alarm מדויק (ככל שהמערכת מרשה) לרגע הנתון. משותף להתראות המניינים ולהתראות זמני היום. */
+    public static void setAt(Context context, AlarmManager am, long millis, PendingIntent pi) {
         boolean canExact = true;
         if (Build.VERSION.SDK_INT >= 31 /* Build.VERSION_CODES.S */) {
             canExact = am.canScheduleExactAlarms();
@@ -95,16 +101,14 @@ public class AlarmScheduler {
 
         if (canExact) {
             if (Build.VERSION.SDK_INT >= 23 /* M */) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, target.getTimeInMillis(), pi);
-            } else if (Build.VERSION.SDK_INT >= 19 /* KITKAT - minSdk */) {
-                am.setExact(AlarmManager.RTC_WAKEUP, target.getTimeInMillis(), pi);
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
             } else {
-                am.set(AlarmManager.RTC_WAKEUP, target.getTimeInMillis(), pi);
+                am.setExact(AlarmManager.RTC_WAKEUP, millis, pi); // KITKAT = minSdk
             }
         } else {
             // אין הרשאת alarm מדויק (Android 12+ שנשללה) - נופלים לתזמון לא-מדויק
             // במקום לקרוס; עדיף התראה שמאחרת מעט על היעדר התראה כלל.
-            am.set(AlarmManager.RTC_WAKEUP, target.getTimeInMillis(), pi);
+            am.set(AlarmManager.RTC_WAKEUP, millis, pi);
         }
     }
 

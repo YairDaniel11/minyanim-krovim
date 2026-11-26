@@ -3,8 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="?attr/colorBgCard"
-    android:padding="16dp">
+    android:padding="20dp">
 
     <TextView
         android:layout_width="match_parent"
@@ -66,12 +65,11 @@
 
         <Button
             android:id="@+id/btnTimePickerCancel"
+            style="?attr/buttonTonalStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_round_button"
-            android:textColor="#FFFFFF"
             android:text="@string/btn_cancel" />
 
         <Button
@@ -79,8 +77,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/bg_round_button"
-            android:textColor="#FFFFFF"
             android:text="@string/btn_ok" />
     </LinearLayout>
 

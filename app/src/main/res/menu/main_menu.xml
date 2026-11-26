@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- נפתח במקש התפריט / המקש הימני / כפתור שלוש הנקודות - במקום שורת כפתורים שתופסת מקום במסך -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_settings"
+        android:title="@string/btn_settings"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/menu_zmanim"
+        android:title="@string/btn_zmanim"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/menu_refresh"
+        android:title="@string/btn_refresh"
+        android:showAsAction="never" />
+</menu>

@@ -104,9 +104,9 @@ public class MinyanDataStore {
         return context.getFileStreamPath(FILE_NAME).exists();
     }
 
-    /** יש מה להציג: במצב ארצי תמיד (הנתונים מוטמעים באפליקציה); במצב קובץ - רק אם נטען קובץ. */
+    /** יש מה להציג: נתונים ארציים תמיד (מוטמעים באפליקציה); קובץ אישי - רק אם נטען. */
     public static boolean hasData(Context context) {
-        return AreaPrefs.isNational(context) || hasPersonalFile(context);
+        return AreaPrefs.usesNational(context) || (AreaPrefs.usesFile(context) && hasPersonalFile(context));
     }
 
     private static String readAll(InputStream in) throws IOException {
@@ -122,8 +122,7 @@ public class MinyanDataStore {
         return sb.toString();
     }
 
-    private static JSONObject readRootJson(Context context) throws IOException, JSONException {
-        if (AreaPrefs.isNational(context)) return readNationalRoot(context);
+    private static JSONObject readPersonalRoot(Context context) throws IOException, JSONException {
         return new JSONObject(readAll(context.openFileInput(FILE_NAME)));
     }
 
@@ -265,9 +264,10 @@ public class MinyanDataStore {
         return out;
     }
 
-    /** מצב ארצי בלי אזור שנבחר - צריך להציג למשתמש הנחיה לבחור אזור. */
+    /** אין שום דבר להציג כי לא נבחר אזור (ואין קובץ אישי פעיל) - צריך להציג למשתמש הנחיה לבחור אזור. */
     public static boolean needsAreaSelection(Context context) {
-        return AreaPrefs.isNational(context) && !AreaPrefs.hasArea(context);
+        boolean personalActive = AreaPrefs.usesFile(context) && hasPersonalFile(context);
+        return AreaPrefs.usesNational(context) && !AreaPrefs.hasArea(context) && !personalActive;
     }
 
     /** האם בית הכנסת הזה (במצב ארצי) באזור הנבחר ולא ברשימת ההתעלמות. */
@@ -278,26 +278,27 @@ public class MinyanDataStore {
     }
 
     public static String loadLocation(Context context) {
-        if (AreaPrefs.isNational(context)) {
-            if (!AreaPrefs.hasArea(context)) return "";
+        if (AreaPrefs.usesNational(context) && AreaPrefs.hasArea(context)) {
             float r = AreaPrefs.getRadiusKm(context);
             String km = (r == Math.floor(r)) ? String.valueOf((int) r) : String.valueOf(r);
             return AreaPrefs.getAreaName(context) + " (" + km + " ק\"מ)";
         }
-        if (!hasData(context)) return "";
-        try {
-            return readRootJson(context).optString("location", "");
-        } catch (Exception e) {
-            return "";
+        if (AreaPrefs.usesFile(context) && hasPersonalFile(context)) {
+            try {
+                return readPersonalRoot(context).optString("location", "");
+            } catch (Exception e) {
+                return "";
+            }
         }
+        return "";
     }
 
-    /** קואורדינטות מהקובץ שנטען (אם יש) - null אם אין קובץ/אין שדה coordinates. במצב ארצי: מרכז האזור שנבחר. */
+    /** קואורדינטות מהמקור הפעיל: מרכז האזור (נתונים ארציים), או coordinates מהקובץ האישי. null אם אין. */
     public static double[] loadCoordinatesFromFile(Context context) {
-        if (AreaPrefs.isNational(context)) return AreaPrefs.getAreaCenter(context);
-        if (!hasData(context)) return null;
+        if (AreaPrefs.usesNational(context) && AreaPrefs.hasArea(context)) return AreaPrefs.getAreaCenter(context);
+        if (!AreaPrefs.usesFile(context) || !hasPersonalFile(context)) return null;
         try {
-            JSONObject coords = readRootJson(context).optJSONObject("coordinates");
+            JSONObject coords = readPersonalRoot(context).optJSONObject("coordinates");
             if (coords == null) return null;
             double lat = coords.optDouble("lat", Double.NaN);
             double lon = coords.optDouble("lon", Double.NaN);
@@ -313,44 +314,52 @@ public class MinyanDataStore {
         return loadAll(context, Calendar.getInstance());
     }
 
-    /** גרסה שמקבלת תאריך ייחוס לחישוב שקיעה/נץ - שימושי לבדיקות ולתצוגת ימים אחרים. */
+    /**
+     * גרסה שמקבלת תאריך ייחוס לחישוב שקיעה/נץ. לפי מקור הנתונים שנבחר: הנתונים הארציים (רק בתי
+     * הכנסת שבאזור ולא ברשימת ההתעלמות), הקובץ האישי, או שניהם יחד.
+     */
     public static List<MinyanEntry> loadAll(Context context, Calendar referenceDate) throws IOException, JSONException {
         List<MinyanEntry> result = new ArrayList<>();
-        if (!hasData(context)) return result;
 
-        boolean national = AreaPrefs.isNational(context);
-        double[] center = national ? AreaPrefs.getAreaCenter(context) : null;
-        if (national && center == null) return result; // עוד לא נבחר אזור
-        double radiusKm = AreaPrefs.getRadiusKm(context);
-        Set<String> hidden = national ? AreaPrefs.getHidden(context) : new HashSet<String>();
+        if (AreaPrefs.usesFile(context) && hasPersonalFile(context)) {
+            JSONObject root = readPersonalRoot(context);
+            // בקובץ אישי זמנים יחסיים (שקיעה/נץ) מחושבים לפי coordinates שבו
+            appendShuls(result, root, computeSunTimes(root, referenceDate), null, 0, null);
+        }
 
-        JSONObject root = readRootJson(context);
+        double[] center = AreaPrefs.getAreaCenter(context);
+        if (AreaPrefs.usesNational(context) && center != null) {
+            // בנתונים הארציים כל השעות קבועות - שקיעה/נץ לא נחוצים
+            appendShuls(result, readNationalRoot(context), null, center,
+                    AreaPrefs.getRadiusKm(context), AreaPrefs.getHidden(context));
+        }
+        return result;
+    }
+
+    /** מוסיף את בתי הכנסת מ-root. center != null = סינון לפי רדיוס והתעלמות (נתונים ארציים). */
+    private static void appendShuls(List<MinyanEntry> out, JSONObject root, SunTimes.Result sun,
+                                    double[] center, double radiusKm, Set<String> hidden) throws JSONException {
         JSONArray shuls = root.optJSONArray("shuls");
-        if (shuls == null) return result;
-
-        // בנתונים הארציים כל השעות קבועות, אז שקיעה/נץ לא נחוצים; בקובץ אישי - לפי coordinates שבו
-        SunTimes.Result sun = national ? null : computeSunTimes(root, referenceDate);
-
+        if (shuls == null) return;
         for (int i = 0; i < shuls.length(); i++) {
             JSONObject shul = shuls.getJSONObject(i);
-            if (national && !isShulVisible(shul, center, radiusKm, hidden)) continue;
+            if (center != null && !isShulVisible(shul, center, radiusKm, hidden)) continue;
             String name = shul.optString("name", "");
             String nusach = shul.isNull("nusach") ? "" : shul.optString("nusach", "");
             JSONObject prayers = shul.optJSONObject("prayers");
             if (prayers == null) continue;
 
-            addDayType(result, prayers.optJSONObject("weekday"), name, nusach, "weekday", sun);
-            addDayType(result, prayers.optJSONObject("friday"), name, nusach, "friday", sun);
-            addDayType(result, prayers.optJSONObject("shabbat"), name, nusach, "shabbat", sun);
+            addDayType(out, prayers.optJSONObject("weekday"), name, nusach, "weekday", sun);
+            addDayType(out, prayers.optJSONObject("friday"), name, nusach, "friday", sun);
+            addDayType(out, prayers.optJSONObject("shabbat"), name, nusach, "shabbat", sun);
         }
-        return result;
     }
 
     /** true אם יש בקובץ לפחות זמן יחסי אחד לשקיעה/נץ אך אין קואורדינטות - כדי להציג אזהרה למשתמש. */
     public static boolean needsCoordinatesButMissing(Context context) {
-        if (AreaPrefs.isNational(context)) return false;
+        if (!AreaPrefs.usesFile(context) || !hasPersonalFile(context)) return false;
         try {
-            JSONObject root = readRootJson(context);
+            JSONObject root = readPersonalRoot(context);
             if (root.optJSONObject("coordinates") != null) return false;
             JSONArray shuls = root.optJSONArray("shuls");
             if (shuls == null) return false;

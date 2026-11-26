@@ -1,9 +1,7 @@
 package com.meir.minyanimkrovim;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends Activity {
+public class MainActivity extends BaseActivity {
 
     private static final int REQUEST_CODE_NOTIF_PERMISSION = 1002;
     private static final long REFRESH_INTERVAL_MS = 30_000;
@@ -46,7 +44,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        ThemeUtil.applyTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -60,30 +57,43 @@ public class MainActivity extends Activity {
         dayRow = (LinearLayout) findViewById(R.id.dayRow);
         listMinyanim = (LinearLayout) findViewById(R.id.listMinyanim);
 
-        Button btnSettings = (Button) findViewById(R.id.btnSettings);
-        Button btnZmanim = (Button) findViewById(R.id.btnZmanim);
-        Button btnRefresh = (Button) findViewById(R.id.btnRefresh);
-
-        btnSettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-            }
-        });
-        btnZmanim.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ZmanimActivity.class));
-            }
-        });
-        btnRefresh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) { refresh(); }
-        });
-
         selectedDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
         buildDayRow();
         requestNotificationPermissionIfNeeded();
+    }
+
+    // ---- תפריט (מקש התפריט / המקש הימני / שלוש נקודות) - במקום שורת כפתורים שתופסת מקום במסך ----
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        } else if (id == R.id.menu_zmanim) {
+            startActivity(new Intent(this, ZmanimActivity.class));
+            return true;
+        } else if (id == R.id.menu_refresh) {
+            refresh();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /** במכשירי מקשים: המקש הימני (soft right) פותח את התפריט. */
+    @Override
+    public boolean onKeyUp(int keyCode, android.view.KeyEvent event) {
+        if (keyCode == android.view.KeyEvent.KEYCODE_SOFT_RIGHT) {
+            openOptionsMenu();
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -131,8 +141,6 @@ public class MainActivity extends Activity {
             b.setTextSize(13);
             b.setPadding(2, 8, 2, 8);
             b.setAllCaps(false);
-            b.setBackgroundResource(R.drawable.bg_round_button);
-            b.setTextColor(0xFFFFFFFF);
             if (calendarDow == todayDow) {
                 b.setTypeface(b.getTypeface(), Typeface.BOLD);
             }
@@ -181,31 +189,21 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static final int TODAY_INDICATOR_COLOR = 0xFFFFD54F; // צהוב-זהוב בולט - חיווי "היום" גם כשלא ממוקד/נבחר
-
+    /** היום שנבחר = כפתור מלא (primary); שאר הימים = כפתור tonal. "היום" בפועל מודגש (bold) ובצבע primary. */
     private void updateDaySelectionColors() {
-        int accent = resolveAttrColor(R.attr.colorAccent);
-        int card = resolveAttrColor(R.attr.colorBgCard);
-        int mainText = resolveAttrColor(R.attr.colorTextMain);
+        int filled = resolveAttrDrawable(R.attr.bgFilled);
+        int tonal = resolveAttrDrawable(R.attr.bgTonal);
+        int onPrimary = resolveAttrColor(R.attr.m3OnPrimary);
+        int onTonal = resolveAttrColor(R.attr.m3OnSecondaryContainer);
+        int primary = resolveAttrColor(R.attr.m3Primary);
         int todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
         for (int i = 0; i < dayButtons.size(); i++) {
             boolean selected = (i + 1) == selectedDayOfWeek;
             boolean isToday = (i + 1) == todayDow;
             Button b = dayButtons.get(i);
-            if (b.isFocused()) {
-                // כשיש פוקוס מקשי ניווט על הכפתור - משאירים את הצבע המובנה
-                // של מצב ה-focused בתוך bg_round_button (טורקיז + מסגרת לבנה,
-                // אותו חיווי שמוצג בכפתורי הגדרות/זמנים/רענון), במקום לדרוס
-                // אותו בצבע אחיד - אחרת אין שום סימן איזה כפתור יום מסומן כרגע.
-                b.getBackground().mutate().clearColorFilter();
-                b.setTextColor(0xFFFFFFFF);
-            } else {
-                b.getBackground().mutate().setColorFilter(selected ? accent : card, PorterDuff.Mode.SRC_IN);
-                // "היום" מקבל צבע טקסט קבוע ובולט (זהוב) בנוסף לגופן המודגש
-                // שכבר מוגדר ב-buildDayRow - חיווי שרואים תמיד כשלא ממוקדים
-                // עליו, גם אם הוא לא היום שנבחר לצפייה כרגע.
-                b.setTextColor(isToday ? TODAY_INDICATOR_COLOR : (selected ? 0xFFFFFFFF : mainText));
-            }
+            b.setBackgroundResource(selected ? filled : tonal);
+            b.setTextColor(selected ? onPrimary : (isToday ? primary : onTonal));
+            b.setTypeface(null, isToday ? Typeface.BOLD : Typeface.NORMAL);
         }
     }
 
@@ -360,10 +358,10 @@ public class MainActivity extends Activity {
         listMinyanim.removeAllViews();
         LayoutInflater inflater = getLayoutInflater();
 
-        int cardColor = resolveAttrColor(R.attr.colorBgCard);
+        int cardDrawable = resolveAttrDrawable(R.attr.bgCard);
         int mainTextColor = resolveAttrColor(R.attr.colorTextMain);
         int secondaryTextColor = resolveAttrColor(R.attr.colorTextSecondary);
-        int nextColor = resolveAttrColor(R.attr.colorNext);
+        int nextColor = resolveAttrColor(R.attr.colorNext); // אדום - הדגשת המניין הקרוב
 
         for (MinyanEntry entry : entries) {
             View row = inflater.inflate(R.layout.list_item_minyan, listMinyanim, false);
@@ -372,15 +370,25 @@ public class MainActivity extends Activity {
             TextView tvStatus = (TextView) row.findViewById(R.id.tvStatusLine);
 
             String nusachPart = entry.nusach.length() > 0 ? entry.nusach + " | " : "";
+            String prefix = nusachPart + entry.prayerLabel(this) + " | ";
+            String timeText = entry.timeLabel();
+            boolean isHighlighted = highlighted != null && entry == highlighted;
+
             tvName.setText(entry.shulName);
-            tvPrayer.setText(nusachPart + entry.prayerLabel(this) + " | " + entry.timeLabel());
+            android.text.SpannableString line = new android.text.SpannableString(prefix + timeText);
+            if (isHighlighted) {
+                // הזמן של המניין הקרוב - באדום
+                line.setSpan(new android.text.style.ForegroundColorSpan(nextColor),
+                        prefix.length(), line.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                line.setSpan(new android.text.style.StyleSpan(Typeface.BOLD),
+                        prefix.length(), line.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            tvPrayer.setText(line);
             tvStatus.setText(statusLine(entry, nowMinutes));
 
-            row.setBackgroundColor(cardColor);
+            row.setBackgroundResource(cardDrawable);
             tvName.setTextColor(mainTextColor);
             tvPrayer.setTextColor(secondaryTextColor);
-
-            boolean isHighlighted = highlighted != null && entry == highlighted;
             tvStatus.setTextColor(isHighlighted ? nextColor : secondaryTextColor);
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -390,11 +398,5 @@ public class MainActivity extends Activity {
 
             listMinyanim.addView(row);
         }
-    }
-
-    private int resolveAttrColor(int attrResId) {
-        TypedValue typedValue = new TypedValue();
-        getTheme().resolveAttribute(attrResId, typedValue, true);
-        return typedValue.data;
     }
 }

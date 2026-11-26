@@ -1,6 +1,5 @@
 package com.meir.minyanimkrovim;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -30,7 +29,7 @@ import java.util.Set;
  *  - MODE_MANAGE: בתי הכנסת שבאזור שנבחר, עם תיבת סימון "להציג" - הסרת הסימון = התעלמות מבית הכנסת.
  *  - MODE_PICK_CENTER: כל בתי הכנסת בארץ, עם חיפוש בשם/כתובת - הבחירה קובעת את מרכז האזור.
  */
-public class ShulListActivity extends Activity {
+public class ShulListActivity extends BaseActivity {
 
     public static final String EXTRA_MODE = "mode";
     public static final String MODE_MANAGE = "manage";
@@ -49,7 +48,6 @@ public class ShulListActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        ThemeUtil.applyTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shul_list);
 
@@ -140,12 +138,6 @@ public class ShulListActivity extends Activity {
             tvSummary.setText(getString(R.string.shul_list_summary_pick, shown.size()));
         }
         adapter.notifyDataSetChanged();
-    }
-
-    private int resolveAttrColor(int attrResId) {
-        TypedValue tv = new TypedValue();
-        getTheme().resolveAttribute(attrResId, tv, true);
-        return tv.data;
     }
 
     private class ShulAdapter extends BaseAdapter {

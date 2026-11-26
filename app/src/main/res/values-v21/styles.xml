@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme.Dark" parent="android:Theme.Material">
+        <item name="colorBgMain">@color/m3d_surface</item>
+        <item name="colorBgCard">@color/m3d_surface_container</item>
+        <item name="colorTextMain">@color/m3d_on_surface</item>
+        <item name="colorTextSecondary">@color/m3d_on_surface_variant</item>
+        <item name="colorAccent">@color/m3d_primary</item>
+        <item name="colorNext">@color/m3d_error</item>
+        <item name="m3Primary">@color/m3d_primary</item>
+        <item name="m3OnPrimary">@color/m3d_on_primary</item>
+        <item name="m3OnSecondaryContainer">@color/m3d_on_secondary_container</item>
+        <item name="m3Outline">@color/m3d_outline</item>
+        <item name="m3Error">@color/m3d_error</item>
+        <item name="bgFilled">@drawable/bg_filled_d</item>
+        <item name="bgTonal">@drawable/bg_tonal_d</item>
+        <item name="bgCard">@drawable/bg_card_d</item>
+        <item name="buttonTonalStyle">@style/M3TonalButton.Dark</item>
+        <item name="android:windowBackground">@color/m3d_surface</item>
+        <item name="android:buttonStyle">@style/M3Button.Dark</item>
+        <item name="android:actionBarStyle">@style/M3ActionBar.Dark</item>
+        <item name="android:alertDialogTheme">@style/M3Dialog.Dark</item>
+        <item name="android:popupMenuStyle">@style/M3PopupMenu.Dark</item>
+        <item name="android:colorAccent">@color/m3d_primary</item>
+        <item name="android:colorPrimary">@color/m3d_surface_container</item>
+        <item name="android:colorPrimaryDark">@color/m3d_status</item>
+        <item name="android:statusBarColor">@color/m3d_status</item>
+        <item name="android:navigationBarColor">@color/m3d_surface</item>
+        <item name="android:colorControlActivated">@color/m3d_primary</item>
+    </style>
+
+    <style name="M3Button.Dark" parent="android:Widget.Button">
+        <item name="android:background">@drawable/bg_filled_d</item>
+        <item name="android:textColor">@color/m3d_on_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="M3TonalButton.Dark" parent="M3Button.Dark">
+        <item name="android:background">@drawable/bg_tonal_d</item>
+        <item name="android:textColor">@color/m3d_on_secondary_container</item>
+    </style>
+
+    <style name="M3ActionBar.Dark" parent="android:Widget.Material.ActionBar">
+        <item name="android:background">@drawable/bg_appbar_d</item>
+    </style>
+
+    <style name="M3PopupMenu.Dark" parent="android:Widget.Material.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_dialog_d</item>
+    </style>
+
+    <style name="M3Dialog.Dark" parent="android:Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_dialog_d</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:colorAccent">@color/m3d_primary</item>
+    </style>
+
+    <style name="AppTheme.Light" parent="android:Theme.Material.Light">
+        <item name="colorBgMain">@color/m3l_surface</item>
+        <item name="colorBgCard">@color/m3l_surface_container</item>
+        <item name="colorTextMain">@color/m3l_on_surface</item>
+        <item name="colorTextSecondary">@color/m3l_on_surface_variant</item>
+        <item name="colorAccent">@color/m3l_primary</item>
+        <item name="colorNext">@color/m3l_error</item>
+        <item name="m3Primary">@color/m3l_primary</item>
+        <item name="m3OnPrimary">@color/m3l_on_primary</item>
+        <item name="m3OnSecondaryContainer">@color/m3l_on_secondary_container</item>
+        <item name="m3Outline">@color/m3l_outline</item>
+        <item name="m3Error">@color/m3l_error</item>
+        <item name="bgFilled">@drawable/bg_filled_l</item>
+        <item name="bgTonal">@drawable/bg_tonal_l</item>
+        <item name="bgCard">@drawable/bg_card_l</item>
+        <item name="buttonTonalStyle">@style/M3TonalButton.Light</item>
+        <item name="android:windowBackground">@color/m3l_surface</item>
+        <item name="android:buttonStyle">@style/M3Button.Light</item>
+        <item name="android:actionBarStyle">@style/M3ActionBar.Light</item>
+        <item name="android:alertDialogTheme">@style/M3Dialog.Light</item>
+        <item name="android:popupMenuStyle">@style/M3PopupMenu.Light</item>
+        <item name="android:colorAccent">@color/m3l_primary</item>
+        <item name="android:colorPrimary">@color/m3l_surface_container</item>
+        <item name="android:colorPrimaryDark">@color/m3l_status</item>
+        <item name="android:statusBarColor">@color/m3l_status</item>
+        <item name="android:navigationBarColor">@color/m3l_surface</item>
+        <item name="android:colorControlActivated">@color/m3l_primary</item>
+    </style>
+
+    <style name="M3Button.Light" parent="android:Widget.Button">
+        <item name="android:background">@drawable/bg_filled_l</item>
+        <item name="android:textColor">@color/m3l_on_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="M3TonalButton.Light" parent="M3Button.Light">
+        <item name="android:background">@drawable/bg_tonal_l</item>
+        <item name="android:textColor">@color/m3l_on_secondary_container</item>
+    </style>
+
+    <style name="M3ActionBar.Light" parent="android:Widget.Material.Light.ActionBar">
+        <item name="android:background">@drawable/bg_appbar_l</item>
+    </style>
+
+    <style name="M3PopupMenu.Light" parent="android:Widget.Material.Light.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_dialog_l</item>
+    </style>
+
+    <style name="M3Dialog.Light" parent="android:Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_dialog_l</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:colorAccent">@color/m3l_primary</item>
+    </style>
+
+    <style name="AppTheme" parent="AppTheme.Dark" />
+</resources>

@@ -1,6 +1,5 @@
 package com.meir.minyanimkrovim;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,19 +13,18 @@ import java.util.Locale;
 
 /**
  * הגדרת אזור המגורים (עיר/שכונה + רדיוס), ניהול רשימת בתי הכנסת להצגה/התעלמות,
- * והורדת הנתונים העדכניים מ-GitHub.
+ * והורדת הנתונים העדכניים מ-GitHub. מקור הנתונים (ארצי / קובץ / שניהם) נבחר בהגדרות.
  */
-public class AreaActivity extends Activity {
+public class AreaActivity extends BaseActivity {
 
     private static final int REQUEST_PICK_CENTER = 2001;
     private static final int REQUEST_MANAGE = 2002;
 
     private TextView tvCurrent, tvCount, tvDataInfo;
-    private Button btnRadius, btnDownload, btnSwitchSource;
+    private Button btnRadius, btnDownload;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        ThemeUtil.applyTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_area);
         setTitle(R.string.area_title);
@@ -36,7 +34,6 @@ public class AreaActivity extends Activity {
         tvDataInfo = (TextView) findViewById(R.id.tvDataInfo);
         btnRadius = (Button) findViewById(R.id.btnRadius);
         btnDownload = (Button) findViewById(R.id.btnDownload);
-        btnSwitchSource = (Button) findViewById(R.id.btnSwitchSource);
 
         findViewById(R.id.btnPickCity).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showCityDialog(); }
@@ -59,13 +56,6 @@ public class AreaActivity extends Activity {
         btnDownload.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { startDownload(); }
         });
-        btnSwitchSource.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                AreaPrefs.setMode(AreaActivity.this,
-                        AreaPrefs.isNational(AreaActivity.this) ? AreaPrefs.MODE_FILE : AreaPrefs.MODE_NATIONAL);
-                refresh();
-            }
-        });
     }
 
     @Override
@@ -74,11 +64,7 @@ public class AreaActivity extends Activity {
         refresh();
     }
 
-    /** פתיחת רשימת בתי כנסת - אפשרית רק במצב נתונים ארציים (אם היינו במצב קובץ - עוברים אליו). */
     private void openShulList(int request) {
-        if (!AreaPrefs.isNational(this)) {
-            AreaPrefs.setMode(this, AreaPrefs.MODE_NATIONAL);
-        }
         Intent i = new Intent(this, ShulListActivity.class);
         i.putExtra(ShulListActivity.EXTRA_MODE,
                 request == REQUEST_PICK_CENTER ? ShulListActivity.MODE_PICK_CENTER : ShulListActivity.MODE_MANAGE);
@@ -115,8 +101,8 @@ public class AreaActivity extends Activity {
     }
 
     private void setArea(String name, double lat, double lon) {
-        AreaPrefs.setMode(this, AreaPrefs.MODE_NATIONAL);
         AreaPrefs.setArea(this, name, lat, lon);
+        ZmanAlarmStore.rescheduleAll(this); // האזור קובע גם את מיקום זמני היום
         refresh();
     }
 
@@ -155,7 +141,7 @@ public class AreaActivity extends Activity {
     }
 
     private void refresh() {
-        boolean national = AreaPrefs.isNational(this);
+        boolean national = AreaPrefs.usesNational(this);
         if (AreaPrefs.hasArea(this)) {
             tvCurrent.setText(getString(R.string.area_current, AreaPrefs.getAreaName(this)));
             if (national) {
@@ -176,12 +162,5 @@ public class AreaActivity extends Activity {
         tvDataInfo.setText(getString(R.string.area_data_info, used.length() == 0 ? "?" : used,
                 used.equals(embedded) ? getString(R.string.area_data_src_embedded) : getString(R.string.area_data_src_downloaded)));
         if (btnDownload.isEnabled()) btnDownload.setText(R.string.area_download);
-
-        if (MinyanDataStore.hasPersonalFile(this)) {
-            btnSwitchSource.setVisibility(View.VISIBLE);
-            btnSwitchSource.setText(national ? R.string.area_use_personal_file : R.string.area_use_national);
-        } else {
-            btnSwitchSource.setVisibility(View.GONE);
-        }
     }
 }

@@ -13,7 +13,8 @@
         android:hint="@string/shul_list_search_hint"
         android:inputType="text"
         android:singleLine="true"
-        android:textColor="?attr/colorTextMain" />
+        android:textColor="?attr/colorTextMain"
+        android:textColorHint="?attr/colorTextSecondary" />
 
     <TextView
         android:id="@+id/tvShulSummary"
@@ -34,10 +35,9 @@
 
     <Button
         android:id="@+id/btnShowAll"
+        style="?attr/buttonTonalStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button"
-        android:textColor="#FFFFFF"
         android:text="@string/shul_list_show_all"
         android:layout_marginTop="6dp" />
 

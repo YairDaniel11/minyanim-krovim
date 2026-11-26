@@ -8,154 +8,304 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="12dp">
 
-    <!-- אזור ובתי כנסת (נתונים ארציים) -->
-    <Button
-        android:id="@+id/btnArea"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button"
-        android:textColor="#FFFFFF"
-        android:text="@string/btn_area"
-        android:layout_marginBottom="20dp" />
-
-    <!-- קובץ מניינים -->
+    <!-- ===== מקור נתוני המניינים ===== -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/settings_data_header"
-        android:textColor="?attr/colorTextMain"
+        android:text="@string/settings_source_header"
+        android:textColor="?attr/m3Primary"
         android:textStyle="bold"
-        android:textSize="18sp"
-        android:layout_marginBottom="10dp" />
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
 
-    <Button
-        android:id="@+id/btnLoadFile"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button"
-        android:textColor="#FFFFFF"
-        android:text="@string/btn_load_file"
-        android:layout_marginBottom="20dp" />
+        android:orientation="vertical"
+        android:background="?attr/bgCard"
+        android:padding="12dp"
+        android:layout_marginBottom="18dp">
 
-    <!-- ערכת נושא -->
+        <RadioGroup
+            android:id="@+id/rgSource"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <RadioButton
+                android:id="@+id/rbSrcNational"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/source_national"
+                android:textColor="?attr/colorTextMain" />
+            <RadioButton
+                android:id="@+id/rbSrcFile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/source_file"
+                android:textColor="?attr/colorTextMain" />
+            <RadioButton
+                android:id="@+id/rbSrcBoth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/source_both"
+                android:textColor="?attr/colorTextMain" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/tvSourceNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorTextSecondary"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_area"
+            android:layout_marginTop="10dp" />
+
+        <Button
+            android:id="@+id/btnLoadFile"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_load_file"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <!-- ===== זמני היום (מיקום) ===== -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/settings_zmanim_header"
+        android:textColor="?attr/m3Primary"
+        android:textStyle="bold"
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/bgCard"
+        android:padding="12dp"
+        android:layout_marginBottom="18dp">
+
+        <TextView
+            android:id="@+id/tvLocationStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorTextMain"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_location_hint"
+            android:textColor="?attr/colorTextSecondary"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnPickCity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/location_pick_city" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <EditText
+                android:id="@+id/etLat"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:inputType="numberDecimal|numberSigned"
+                android:hint="@string/zmanim_lat_hint"
+                android:textColor="?attr/colorTextMain"
+                android:textColorHint="?attr/colorTextSecondary" />
+
+            <EditText
+                android:id="@+id/etLon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="numberDecimal|numberSigned"
+                android:hint="@string/zmanim_lon_hint"
+                android:textColor="?attr/colorTextMain"
+                android:textColorHint="?attr/colorTextSecondary" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSaveLocation"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/zmanim_save_location"
+            android:layout_marginTop="6dp" />
+
+        <Button
+            android:id="@+id/btnClearLocation"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/location_clear_manual"
+            android:layout_marginTop="6dp" />
+    </LinearLayout>
+
+    <!-- ===== התראות לזמני היום ===== -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/settings_zman_alarms_header"
+        android:textColor="?attr/m3Primary"
+        android:textStyle="bold"
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/bgCard"
+        android:padding="12dp"
+        android:layout_marginBottom="18dp">
+
+        <LinearLayout
+            android:id="@+id/zmanAlarmList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/btnAddZmanAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/zman_alarm_add"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <!-- ===== ערכת נושא ===== -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/settings_theme_header"
-        android:textColor="?attr/colorTextMain"
+        android:textColor="?attr/m3Primary"
         android:textStyle="bold"
-        android:textSize="18sp"
-        android:layout_marginBottom="10dp" />
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
 
     <RadioGroup
         android:id="@+id/rgTheme"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginBottom="20dp">
+        android:background="?attr/bgCard"
+        android:padding="12dp"
+        android:layout_marginBottom="18dp">
 
         <RadioButton
             android:id="@+id/rbThemeSystem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/theme_system"
-            android:textColor="?attr/colorTextMain"
-            android:nextFocusDown="@id/rbThemeLight" />
+            android:textColor="?attr/colorTextMain" />
 
         <RadioButton
             android:id="@+id/rbThemeLight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/theme_light"
-            android:textColor="?attr/colorTextMain"
-            android:nextFocusUp="@id/rbThemeSystem"
-            android:nextFocusDown="@id/rbThemeDark" />
+            android:textColor="?attr/colorTextMain" />
 
         <RadioButton
             android:id="@+id/rbThemeDark"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/theme_dark"
-            android:textColor="?attr/colorTextMain"
-            android:nextFocusUp="@id/rbThemeLight" />
+            android:textColor="?attr/colorTextMain" />
     </RadioGroup>
 
-    <!-- התראות -->
+    <!-- ===== התראות מניינים ===== -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/settings_alarms_header"
-        android:textColor="?attr/colorTextMain"
+        android:textColor="?attr/m3Primary"
         android:textStyle="bold"
-        android:textSize="18sp"
-        android:layout_marginBottom="10dp" />
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
 
-    <!-- כל שורת תפילה בנויה כשתי שורות מוערמות (לא צמודות זו לצד זו) -
-         כדי שלא ילחצו זו על זו במסכים צרים (ראו activity_main.xml להסבר
-         דומה). שורה עליונה: תיבת סימון + תווית. שורה תחתונה: כפתור שעה
-         ברוחב מלא. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/bgCard"
+        android:padding="12dp"
+        android:layout_marginBottom="18dp">
 
-    <!-- שחרית -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical">
-        <CheckBox android:id="@+id/cbShacharit"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:nextFocusDown="@id/btnTimeShacharit" />
-        <TextView
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="@string/settings_enable_shacharit" android:textColor="?attr/colorTextMain" />
+        <!-- כל שורת תפילה: שורה עליונה (תיבת סימון + תווית) ושורה תחתונה (כפתור שעה ברוחב מלא) -
+             כדי לא להידחס במסכים צרים. -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <CheckBox android:id="@+id/cbShacharit"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <TextView
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/settings_enable_shacharit" android:textColor="?attr/colorTextMain" />
+        </LinearLayout>
+        <Button android:id="@+id/btnTimeShacharit"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/settings_set_time"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <CheckBox android:id="@+id/cbMincha"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <TextView
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/settings_enable_mincha" android:textColor="?attr/colorTextMain" />
+        </LinearLayout>
+        <Button android:id="@+id/btnTimeMincha"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/settings_set_time"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <CheckBox android:id="@+id/cbArvit"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <TextView
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/settings_enable_arvit" android:textColor="?attr/colorTextMain" />
+        </LinearLayout>
+        <Button android:id="@+id/btnTimeArvit"
+            style="?attr/buttonTonalStyle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/settings_set_time" />
     </LinearLayout>
-    <Button android:id="@+id/btnTimeShacharit"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
-        android:text="@string/settings_set_time"
-        android:layout_marginBottom="16dp"
-        android:nextFocusUp="@id/cbShacharit" android:nextFocusDown="@id/cbMincha" />
-
-    <!-- מנחה -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical">
-        <CheckBox android:id="@+id/cbMincha"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:nextFocusUp="@id/btnTimeShacharit" android:nextFocusDown="@id/btnTimeMincha" />
-        <TextView
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="@string/settings_enable_mincha" android:textColor="?attr/colorTextMain" />
-    </LinearLayout>
-    <Button android:id="@+id/btnTimeMincha"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
-        android:text="@string/settings_set_time"
-        android:layout_marginBottom="16dp"
-        android:nextFocusUp="@id/cbMincha" android:nextFocusDown="@id/cbArvit" />
-
-    <!-- ערבית -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical">
-        <CheckBox android:id="@+id/cbArvit"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:nextFocusUp="@id/btnTimeMincha" android:nextFocusDown="@id/btnTimeArvit" />
-        <TextView
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="@string/settings_enable_arvit" android:textColor="?attr/colorTextMain" />
-    </LinearLayout>
-    <Button android:id="@+id/btnTimeArvit"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button" android:textColor="#FFFFFF"
-        android:text="@string/settings_set_time"
-        android:layout_marginBottom="20dp"
-        android:nextFocusUp="@id/cbArvit" android:nextFocusDown="@id/btnBattery" />
 
     <Button
         android:id="@+id/btnBattery"
+        style="?attr/buttonTonalStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_round_button"
-        android:textColor="#FFFFFF"
         android:text="@string/settings_ignore_battery"
-        android:nextFocusUp="@id/btnTimeArvit" />
+        android:layout_marginBottom="12dp" />
 
 </LinearLayout>
 </ScrollView>

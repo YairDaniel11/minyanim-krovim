@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- שמות ישנים (בשימוש בקוד): -->
     <attr name="colorBgMain" format="color" />
     <attr name="colorBgCard" format="color" />
     <attr name="colorTextMain" format="color" />
     <attr name="colorTextSecondary" format="color" />
     <attr name="colorAccent" format="color" />
     <attr name="colorNext" format="color" />
+    <!-- Material 3 -->
+    <attr name="m3Primary" format="color" />
+    <attr name="m3OnPrimary" format="color" />
+    <attr name="m3OnSecondaryContainer" format="color" />
+    <attr name="m3Outline" format="color" />
+    <attr name="m3Error" format="color" />
+    <!-- drawables שמשתנים לפי ערכת הנושא (reference attrs - עובדים גם ב-API 19) -->
+    <attr name="bgFilled" format="reference" />
+    <attr name="bgTonal" format="reference" />
+    <attr name="bgCard" format="reference" />
+    <attr name="buttonTonalStyle" format="reference" />
 </resources>

@@ -14,6 +14,8 @@ public class AreaPrefs {
 
     public static final String MODE_NATIONAL = "national";
     public static final String MODE_FILE = "file";
+    /** שניהם יחד: הנתונים הארציים (לפי האזור) + הקובץ האישי. */
+    public static final String MODE_BOTH = "both";
 
     public static final float[] RADIUS_OPTIONS_KM = {0.5f, 1f, 1.5f, 2f, 3f, 5f, 10f};
     private static final float DEFAULT_RADIUS_KM = 1.5f;
@@ -40,8 +42,16 @@ public class AreaPrefs {
         return MinyanDataStore.hasPersonalFile(c) ? MODE_FILE : MODE_NATIONAL;
     }
 
-    public static boolean isNational(Context c) {
-        return MODE_NATIONAL.equals(getMode(c));
+    /** האם מוצגים הנתונים הארציים (מצב "ארצי" או "שניהם"). */
+    public static boolean usesNational(Context c) {
+        String m = getMode(c);
+        return MODE_NATIONAL.equals(m) || MODE_BOTH.equals(m);
+    }
+
+    /** האם מוצג הקובץ האישי (מצב "קובץ" או "שניהם"). */
+    public static boolean usesFile(Context c) {
+        String m = getMode(c);
+        return MODE_FILE.equals(m) || MODE_BOTH.equals(m);
     }
 
     public static void setMode(Context c, String mode) {

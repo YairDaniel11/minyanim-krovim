@@ -32,7 +32,7 @@ public class ThemeUtil {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    private static boolean isDarkMode(Context context) {
+    public static boolean isDarkMode(Context context) {
         String mode = getMode(context);
         if (MODE_LIGHT.equals(mode)) return false;
         if (MODE_DARK.equals(mode)) return true;

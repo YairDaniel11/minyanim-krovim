@@ -7,7 +7,7 @@
     <string name="btn_settings">הגדרות</string>
     <string name="btn_refresh">רענון</string>
 
-    <string name="label_no_data">לא נטען קובץ מניינים. היכנסו ל"הגדרות" כדי לבחור קובץ JSON.</string>
+    <string name="label_no_data">אין נתונים להצגה. היכנסו ל\"הגדרות\" ובחרו מקור נתונים (ארצי / קובץ מקומי).</string>
     <string name="label_no_entries_for_day">אין מניינים מוגדרים ליום הזה בקובץ שנטען.</string>
     <string name="label_load_error">שגיאה בטעינת הקובץ: %1$s</string>
 
@@ -96,7 +96,7 @@
     <string name="btn_zmanim">זמני היום</string>
     <string name="zmanim_title">זמני היום</string>
     <string name="zmanim_disclaimer">חישוב אסטרונומי כללי - לא תחליף לפסיקה הלכתית מוסמכת.</string>
-    <string name="zmanim_no_location">לא הוגדר מיקום. הזינו קואורדינטות למטה, או טענו קובץ מניינים שכולל אותן.</string>
+    <string name="zmanim_no_location">לא הוגדר מיקום. היכנסו ל\"הגדרות\" ← \"זמני היום\" ובחרו עיר.</string>
     <string name="zmanim_set_location">הגדרת מיקום ידנית</string>
     <string name="zmanim_city_picker_label">בחירת עיר מהרשימה (ממלא את השדות למטה אוטומטית, אפשר גם לערוך ידנית)</string>
     <string name="zmanim_city_picker_prompt">-- בחירת עיר --</string>
@@ -145,15 +145,49 @@
     <string name="dist_meters">%1$d מ\'</string>
     <string name="dist_km">%1$.1f ק\"מ</string>
 
-    <string name="zman_alot_hashachar">עלות השחר</string>
+    <string name="zman_alot_hashachar">עלות השחר (16.1°)</string>
     <string name="zman_netz_hachama">הנץ החמה</string>
-    <string name="zman_sof_zman_shema">סוף זמן קריאת שמע (גר"א)</string>
-    <string name="zman_sof_zman_tefila">סוף זמן תפילה (גר"א)</string>
+    <string name="zman_sof_zman_shema">סוף זמן קריאת שמע - גר\"א</string>
+    <string name="zman_sof_zman_tefila">סוף זמן תפילה - גר\"א</string>
     <string name="zman_chatzot">חצות היום</string>
     <string name="zman_mincha_gedola">מנחה גדולה</string>
     <string name="zman_mincha_ketana">מנחה קטנה</string>
     <string name="zman_plag_hamincha">פלג המנחה</string>
     <string name="zman_shkiat_hachama">שקיעת החמה</string>
-    <string name="zman_tzeit_hakochavim">צאת הכוכבים</string>
+    <string name="zman_tzeit_hakochavim">צאת הכוכבים (8.5°)</string>
 
+    <string name="zman_alot_72">עלות השחר (72 דקות)</string>
+    <string name="zman_sof_shema_mga">סוף זמן קריאת שמע - מג\"א</string>
+    <string name="zman_sof_tefila_mga">סוף זמן תפילה - מג\"א</string>
+    <string name="zman_tzeit_rt">צאת הכוכבים - ר\"ת (72 דקות)</string>
+    <string name="settings_source_header">מקור נתוני המניינים</string>
+    <string name="source_national">נתונים ארציים (לפי האזור שנבחר)</string>
+    <string name="source_file">הקובץ המקומי שלי</string>
+    <string name="source_both">שניהם יחד</string>
+    <string name="source_file_missing">עדיין לא נטען קובץ מקומי - טענו קובץ עם הכפתור למטה.</string>
+    <string name="settings_zmanim_header">זמני היום</string>
+    <string name="settings_location_hint">המיקום קובע את זמני היום וההתראות לזמני היום. בלי מיקום ידני נעשה שימוש באזור שנבחר.</string>
+    <string name="location_status_manual">מיקום נוכחי: %1$s, %2$s (הוגדר ידנית)</string>
+    <string name="location_status_area">מיקום נוכחי: לפי האזור שנבחר</string>
+    <string name="location_status_none">לא הוגדר מיקום</string>
+    <string name="location_pick_city">בחירת עיר מהרשימה</string>
+    <string name="location_clear_manual">מחיקת המיקום הידני</string>
+    <string name="settings_zman_alarms_header">התראות לזמני היום</string>
+    <string name="zman_alarm_add">הוספת התראה לזמן יום</string>
+    <string name="zman_alarm_none">אין התראות לזמני היום</string>
+    <string name="zman_alarm_pick_zman">באיזה זמן להתריע?</string>
+    <string name="zman_alarm_pick_before">כמה זמן לפני?</string>
+    <string name="zman_alarm_before_0">בזמן עצמו</string>
+    <string name="zman_alarm_before_n">%1$d דקות לפני</string>
+    <string name="zman_alarm_pick_type">סוג ההתראה</string>
+    <string name="zman_alarm_type_repeat">קבועה (כל יום)</string>
+    <string name="zman_alarm_type_once">חד-פעמית</string>
+    <string name="zman_alarm_row">%1$s · %2$s · %3$s</string>
+    <string name="zman_alarm_need_location">הגדירו קודם מיקום (עיר) כדי להפעיל התראות לזמני היום.</string>
+    <string name="zman_alarm_added">ההתראה נוספה</string>
+    <string name="zman_alarm_delete_title">מחיקת התראה</string>
+    <string name="zman_alarm_delete">מחיקה</string>
+    <string name="zman_alarm_now">הגיע הזמן (%1$s)</string>
+    <string name="zman_alarm_in">בעוד %1$d דקות (%2$s)</string>
+    <string name="menu_more">עוד</string>
 </resources>

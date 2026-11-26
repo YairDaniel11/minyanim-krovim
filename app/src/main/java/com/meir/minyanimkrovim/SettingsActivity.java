@@ -2,6 +2,7 @@ package com.meir.minyanimkrovim;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -11,27 +12,40 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
-public class SettingsActivity extends Activity {
+import java.util.List;
+import java.util.Locale;
+
+public class SettingsActivity extends BaseActivity {
 
     private static final int REQUEST_CODE_OPEN_FILE = 1001;
     private static final int REQUEST_CODE_BROWSE_FILE = 1003;
     private static final int REQUEST_CODE_STORAGE_PERMISSION = 1004;
 
+    /** "כמה דקות לפני" - האפשרויות בהוספת התראה לזמן יום. */
+    private static final int[] BEFORE_OPTIONS = {0, 5, 10, 15, 20, 30, 45, 60, 90};
+
     private CheckBox cbShacharit, cbMincha, cbArvit;
     private Button btnTimeShacharit, btnTimeMincha, btnTimeArvit, btnBattery, btnLoadFile;
-    private RadioGroup rgTheme;
+    private RadioGroup rgTheme, rgSource;
+    private TextView tvSourceNote, tvLocationStatus;
+    private EditText etLat, etLon;
+    private LinearLayout zmanAlarmList;
+    private boolean updatingSourceUi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        ThemeUtil.applyTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
@@ -44,14 +58,23 @@ public class SettingsActivity extends Activity {
         btnTimeArvit = (Button) findViewById(R.id.btnTimeArvit);
         btnBattery = (Button) findViewById(R.id.btnBattery);
         rgTheme = (RadioGroup) findViewById(R.id.rgTheme);
+        rgSource = (RadioGroup) findViewById(R.id.rgSource);
+        tvSourceNote = (TextView) findViewById(R.id.tvSourceNote);
+        tvLocationStatus = (TextView) findViewById(R.id.tvLocationStatus);
+        etLat = (EditText) findViewById(R.id.etLat);
+        etLon = (EditText) findViewById(R.id.etLon);
+        zmanAlarmList = (LinearLayout) findViewById(R.id.zmanAlarmList);
 
         findViewById(R.id.btnArea).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { startActivity(new Intent(SettingsActivity.this, AreaActivity.class)); }
         });
-
         btnLoadFile.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { openFilePicker(); }
         });
+
+        setupSourceSelector();
+        setupLocationSection();
+        setupZmanAlarmsSection();
 
         setupPrayerRow(cbShacharit, btnTimeShacharit, AlarmScheduler.TYPE_SHACHARIT);
         setupPrayerRow(cbMincha, btnTimeMincha, AlarmScheduler.TYPE_MINCHA);
@@ -63,6 +86,225 @@ public class SettingsActivity extends Activity {
 
         setupThemeSelector();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshSourceUi();
+        refreshLocationStatus();
+    }
+
+    // ------------------------------------------------------------------ מקור הנתונים
+
+    private void setupSourceSelector() {
+        rgSource.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (updatingSourceUi) return;
+                String mode = checkedId == R.id.rbSrcFile ? AreaPrefs.MODE_FILE
+                        : checkedId == R.id.rbSrcBoth ? AreaPrefs.MODE_BOTH
+                        : AreaPrefs.MODE_NATIONAL;
+                AreaPrefs.setMode(SettingsActivity.this, mode);
+                refreshSourceUi();
+            }
+        });
+    }
+
+    private void refreshSourceUi() {
+        updatingSourceUi = true;
+        String mode = AreaPrefs.getMode(this);
+        int id = AreaPrefs.MODE_FILE.equals(mode) ? R.id.rbSrcFile
+                : AreaPrefs.MODE_BOTH.equals(mode) ? R.id.rbSrcBoth : R.id.rbSrcNational;
+        ((RadioButton) findViewById(id)).setChecked(true);
+        updatingSourceUi = false;
+
+        boolean needsFile = AreaPrefs.usesFile(this) && !MinyanDataStore.hasPersonalFile(this);
+        tvSourceNote.setVisibility(needsFile ? View.VISIBLE : View.GONE);
+        tvSourceNote.setText(R.string.source_file_missing);
+    }
+
+    // ------------------------------------------------------------------ מיקום לזמני היום
+
+    private void setupLocationSection() {
+        findViewById(R.id.btnPickCity).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showCityDialog(); }
+        });
+        findViewById(R.id.btnSaveLocation).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { saveManualLocation(); }
+        });
+        findViewById(R.id.btnClearLocation).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                LocationPrefs.clearManualCoords(SettingsActivity.this);
+                etLat.setText("");
+                etLon.setText("");
+                onLocationChanged();
+            }
+        });
+        LocationPrefs.Coords manual = LocationPrefs.getManualCoords(this);
+        if (manual != null) {
+            etLat.setText(formatCoord(manual.lat));
+            etLon.setText(formatCoord(manual.lon));
+        }
+    }
+
+    private void showCityDialog() {
+        final DefaultCities.City[] cities = DefaultCities.ALL;
+        String[] labels = new String[cities.length];
+        for (int i = 0; i < cities.length; i++) labels[i] = cities[i].name;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.location_pick_city)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        DefaultCities.City city = cities[which];
+                        LocationPrefs.setManualCoords(SettingsActivity.this, city.lat, city.lon);
+                        etLat.setText(formatCoord(city.lat));
+                        etLon.setText(formatCoord(city.lon));
+                        onLocationChanged();
+                    }
+                })
+                .show();
+    }
+
+    private void saveManualLocation() {
+        try {
+            double lat = Double.parseDouble(etLat.getText().toString().trim());
+            double lon = Double.parseDouble(etLon.getText().toString().trim());
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new NumberFormatException();
+            LocationPrefs.setManualCoords(this, lat, lon);
+            onLocationChanged();
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, R.string.zmanim_invalid_location, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onLocationChanged() {
+        Toast.makeText(this, R.string.zmanim_location_saved, Toast.LENGTH_SHORT).show();
+        refreshLocationStatus();
+        ZmanAlarmStore.rescheduleAll(this); // זמני ההתראות תלויים במיקום
+    }
+
+    private void refreshLocationStatus() {
+        LocationPrefs.Coords manual = LocationPrefs.getManualCoords(this);
+        if (manual != null) {
+            tvLocationStatus.setText(getString(R.string.location_status_manual,
+                    formatCoord(manual.lat), formatCoord(manual.lon)));
+        } else if (LocationPrefs.getEffectiveCoords(this) != null) {
+            tvLocationStatus.setText(R.string.location_status_area);
+        } else {
+            tvLocationStatus.setText(R.string.location_status_none);
+        }
+    }
+
+    private static String formatCoord(double value) {
+        return String.format(Locale.US, "%.4f", value);
+    }
+
+    // ------------------------------------------------------------------ התראות לזמני היום
+
+    private void setupZmanAlarmsSection() {
+        findViewById(R.id.btnAddZmanAlarm).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { startAddZmanAlarm(); }
+        });
+        refreshZmanAlarmList();
+    }
+
+    private void refreshZmanAlarmList() {
+        zmanAlarmList.removeAllViews();
+        List<ZmanAlarmStore.Alarm> alarms = ZmanAlarmStore.list(this);
+        if (alarms.isEmpty()) {
+            TextView none = new TextView(this);
+            none.setText(R.string.zman_alarm_none);
+            none.setTextColor(resolveAttrColor(R.attr.colorTextSecondary));
+            none.setTextSize(13);
+            zmanAlarmList.addView(none);
+            return;
+        }
+        for (final ZmanAlarmStore.Alarm a : alarms) {
+            TextView row = new TextView(this);
+            String before = a.before == 0 ? getString(R.string.zman_alarm_before_0)
+                    : getString(R.string.zman_alarm_before_n, a.before);
+            String type = getString(a.repeat ? R.string.zman_alarm_type_repeat : R.string.zman_alarm_type_once);
+            row.setText(getString(R.string.zman_alarm_row, getString(ZmanimList.labelRes(a.key)), before, type));
+            row.setTextColor(resolveAttrColor(R.attr.m3OnSecondaryContainer));
+            row.setTextSize(14);
+            row.setBackgroundResource(resolveAttrDrawable(R.attr.bgTonal));
+            row.setFocusable(true);
+            row.setClickable(true);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.bottomMargin = 6;
+            row.setLayoutParams(lp);
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { confirmDeleteZmanAlarm(a.id); }
+            });
+            zmanAlarmList.addView(row);
+        }
+    }
+
+    private void confirmDeleteZmanAlarm(final int id) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.zman_alarm_delete_title)
+                .setPositiveButton(R.string.zman_alarm_delete, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        ZmanAlarmStore.remove(SettingsActivity.this, id);
+                        refreshZmanAlarmList();
+                    }
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    /** שלושה שלבים: איזה זמן -> כמה דקות לפני -> קבועה/חד-פעמית. */
+    private void startAddZmanAlarm() {
+        if (LocationPrefs.getEffectiveCoords(this) == null) {
+            Toast.makeText(this, R.string.zman_alarm_need_location, Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] labels = new String[ZmanimList.ALL.length];
+        for (int i = 0; i < labels.length; i++) labels[i] = getString(ZmanimList.ALL[i].labelRes);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.zman_alarm_pick_zman)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        pickBefore(ZmanimList.ALL[which].key);
+                    }
+                })
+                .show();
+    }
+
+    private void pickBefore(final String key) {
+        String[] labels = new String[BEFORE_OPTIONS.length];
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = BEFORE_OPTIONS[i] == 0 ? getString(R.string.zman_alarm_before_0)
+                    : getString(R.string.zman_alarm_before_n, BEFORE_OPTIONS[i]);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.zman_alarm_pick_before)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        pickType(key, BEFORE_OPTIONS[which]);
+                    }
+                })
+                .show();
+    }
+
+    private void pickType(final String key, final int before) {
+        String[] labels = {getString(R.string.zman_alarm_type_repeat), getString(R.string.zman_alarm_type_once)};
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.zman_alarm_pick_type)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        boolean ok = ZmanAlarmStore.add(SettingsActivity.this, key, before, which == 0);
+                        Toast.makeText(SettingsActivity.this,
+                                ok ? R.string.zman_alarm_added : R.string.zman_alarm_need_location,
+                                Toast.LENGTH_SHORT).show();
+                        refreshZmanAlarmList();
+                    }
+                })
+                .show();
+    }
+
+    // ------------------------------------------------------------------ ערכת נושא
 
     private void setupThemeSelector() {
         String mode = ThemeUtil.getMode(this);
@@ -82,6 +324,8 @@ public class SettingsActivity extends Activity {
             }
         });
     }
+
+    // ------------------------------------------------------------------ התראות מניינים
 
     private void setupPrayerRow(final CheckBox checkBox, final Button timeButton, final String type) {
         boolean enabled = AlarmScheduler.isEnabled(this, type);
@@ -107,8 +351,7 @@ public class SettingsActivity extends Activity {
 
     /**
      * דיאלוג שעה שבנוי ידנית (NumberPicker) במקום TimePickerDialog של המערכת -
-     * כך שהמראה זהה בכל גרסאות אנדרואיד (על מכשיר ישן במיוחד, TimePickerDialog
-     * המובנה נראה שונה לגמרי בין גרסאות, וזה מבלבל משתמשים).
+     * כך שהמראה זהה בכל גרסאות אנדרואיד.
      */
     private void showTimePickerDialog(final String type, final Button timeButton, final CheckBox checkBox) {
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -122,13 +365,13 @@ public class SettingsActivity extends Activity {
         pickerHour.setMinValue(0);
         pickerHour.setMaxValue(23);
         pickerHour.setFormatter(new NumberPicker.Formatter() {
-            @Override public String format(int value) { return String.format(java.util.Locale.US, "%02d", value); }
+            @Override public String format(int value) { return String.format(Locale.US, "%02d", value); }
         });
 
         pickerMinute.setMinValue(0);
         pickerMinute.setMaxValue(59);
         pickerMinute.setFormatter(new NumberPicker.Formatter() {
-            @Override public String format(int value) { return String.format(java.util.Locale.US, "%02d", value); }
+            @Override public String format(int value) { return String.format(Locale.US, "%02d", value); }
         });
 
         int currentMinutes = AlarmScheduler.getMinutesOfDay(this, type);
@@ -159,8 +402,7 @@ public class SettingsActivity extends Activity {
     }
 
     private String formatMinutes(int minutesOfDay) {
-        return String.format(java.util.Locale.US, "%02d:%02d",
-                minutesOfDay / 60, minutesOfDay % 60);
+        return String.format(Locale.US, "%02d:%02d", minutesOfDay / 60, minutesOfDay % 60);
     }
 
     private void requestIgnoreBatteryOptimizations() {
@@ -177,12 +419,11 @@ public class SettingsActivity extends Activity {
         Toast.makeText(this, R.string.settings_ignore_battery, Toast.LENGTH_SHORT).show();
     }
 
+    // ------------------------------------------------------------------ טעינת קובץ אישי
+
     /**
-     * במכשירים ישנים (SDK < 29, לפני scoped storage) בורר המערכת לרוב לא
-     * חושף עיון באחסון מקומי, ועל ROMs כשרים מצומצמים במיוחד (כמו SDK 19)
-     * ייתכן שאין בכלל אפליקציית ניהול קבצים/DocumentsUI מותקנת - כך שבורר
-     * המערכת לא יעבוד בכלל. לכן במכשירים כאלה פותחים את הדפדפן הפנימי
-     * (FileBrowserActivity) במקום.
+     * במכשירים ישנים (SDK < 29) בורר המערכת לרוב לא חושף עיון באחסון מקומי, ועל ROMs כשרים
+     * מצומצמים ייתכן שאין בכלל אפליקציית ניהול קבצים - לכן שם פותחים את הדפדפן הפנימי.
      */
     private void openFilePicker() {
         if (Build.VERSION.SDK_INT < 29) {
@@ -246,6 +487,7 @@ public class SettingsActivity extends Activity {
         try {
             MinyanDataStore.importFromUri(this, uri);
             Toast.makeText(this, R.string.btn_load_file, Toast.LENGTH_SHORT).show();
+            refreshSourceUi();
         } catch (Exception e) {
             String msg = getString(R.string.label_load_error, e.getMessage());
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
