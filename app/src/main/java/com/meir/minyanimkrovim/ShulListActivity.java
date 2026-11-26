@@ -153,6 +153,8 @@ public class ShulListActivity extends BaseActivity {
             TextView name = (TextView) row.findViewById(R.id.tvShulRowName);
             TextView info = (TextView) row.findViewById(R.id.tvShulRowInfo);
             CheckBox cb = (CheckBox) row.findViewById(R.id.cbShulShown);
+            cb.setFocusable(false);
+            cb.setClickable(false);
             name.setTextColor(resolveAttrColor(R.attr.colorTextMain));
             info.setTextColor(resolveAttrColor(R.attr.colorTextSecondary));
             name.setText(si.name);

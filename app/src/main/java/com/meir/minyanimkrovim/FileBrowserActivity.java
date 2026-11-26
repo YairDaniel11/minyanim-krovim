@@ -248,20 +248,6 @@ public class FileBrowserActivity extends BaseActivity {
                 tvName.setTextColor(mainTextColor);
             }
 
-            row.setBackgroundColor(0x00000000);
-            row.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-                @Override
-                public void onFocusChange(View v, boolean hasFocus) {
-                    v.setBackgroundColor(hasFocus ? withAlpha(accentColor, 0x55) : 0x00000000);
-                }
-            });
-            row.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    onEntryClicked(position);
-                }
-            });
-
             return row;
         }
     }

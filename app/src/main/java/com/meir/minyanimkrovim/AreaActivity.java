@@ -75,29 +75,23 @@ public class AreaActivity extends BaseActivity {
         final DefaultCities.City[] cities = DefaultCities.ALL;
         String[] labels = new String[cities.length];
         for (int i = 0; i < cities.length; i++) labels[i] = cities[i].name;
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.area_pick_city)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.area_pick_city), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         setArea(cities[which].name, cities[which].lat, cities[which].lon);
                     }
-                })
-                .show();
+                });
     }
 
     private void showRadiusDialog() {
         final float[] opts = AreaPrefs.RADIUS_OPTIONS_KM;
         String[] labels = new String[opts.length];
         for (int i = 0; i < opts.length; i++) labels[i] = getString(R.string.area_radius_option, formatKm(opts[i]));
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.area_radius_title)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.area_radius_title), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         AreaPrefs.setRadiusKm(AreaActivity.this, opts[which]);
                         refresh();
                     }
-                })
-                .show();
+                });
     }
 
     private void setArea(String name, double lat, double lon) {

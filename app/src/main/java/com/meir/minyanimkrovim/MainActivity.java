@@ -46,6 +46,7 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setHeaderAction("⋮", new Runnable() { @Override public void run() { showMainMenu(); } });
 
         tvLocation = (TextView) findViewById(R.id.tvLocation);
         tvNextTitle = (TextView) findViewById(R.id.tvNextTitle);
@@ -64,36 +65,26 @@ public class MainActivity extends BaseActivity {
 
     // ---- תפריט (מקש התפריט / המקש הימני / שלוש נקודות) - במקום שורת כפתורים שתופסת מקום במסך ----
 
-    @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
+    private void showMainMenu() {
+        CharSequence[] items = {getString(R.string.btn_settings), getString(R.string.btn_zmanim), getString(R.string.btn_refresh)};
+        Dialogs.list(this, getString(R.string.menu_more), items, new Dialogs.OnChoose() {
+            @Override public void onChoose(int i) {
+                if (i == 0) startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                else if (i == 1) startActivity(new Intent(MainActivity.this, ZmanimActivity.class));
+                else refresh();
+            }
+        });
     }
 
+    /** מקש התפריט / המקש הימני (soft right) פותחים את התפריט בעיצוב שלנו. */
     @Override
-    public boolean onOptionsItemSelected(android.view.MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
-            return true;
-        } else if (id == R.id.menu_zmanim) {
-            startActivity(new Intent(this, ZmanimActivity.class));
-            return true;
-        } else if (id == R.id.menu_refresh) {
-            refresh();
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        int k = event.getKeyCode();
+        if (k == android.view.KeyEvent.KEYCODE_MENU || k == android.view.KeyEvent.KEYCODE_SOFT_RIGHT) {
+            if (event.getAction() == android.view.KeyEvent.ACTION_UP) showMainMenu();
             return true;
         }
-        return super.onOptionsItemSelected(item);
-    }
-
-    /** במכשירי מקשים: המקש הימני (soft right) פותח את התפריט. */
-    @Override
-    public boolean onKeyUp(int keyCode, android.view.KeyEvent event) {
-        if (keyCode == android.view.KeyEvent.KEYCODE_SOFT_RIGHT) {
-            openOptionsMenu();
-            return true;
-        }
-        return super.onKeyUp(keyCode, event);
+        return super.dispatchKeyEvent(event);
     }
 
     private void requestNotificationPermissionIfNeeded() {

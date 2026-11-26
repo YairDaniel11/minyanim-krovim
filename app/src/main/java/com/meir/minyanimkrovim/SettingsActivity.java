@@ -80,6 +80,7 @@ public class SettingsActivity extends BaseActivity {
         setupPrayerRow(cbMincha, btnTimeMincha, AlarmScheduler.TYPE_MINCHA);
         setupPrayerRow(cbArvit, btnTimeArvit, AlarmScheduler.TYPE_ARVIT);
 
+        if (Build.VERSION.SDK_INT < 23) btnBattery.setVisibility(View.GONE); // אין מנגנון כזה לפני אנדרואיד 6
         btnBattery.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { requestIgnoreBatteryOptimizations(); }
         });
@@ -151,18 +152,15 @@ public class SettingsActivity extends BaseActivity {
         final DefaultCities.City[] cities = DefaultCities.ALL;
         String[] labels = new String[cities.length];
         for (int i = 0; i < cities.length; i++) labels[i] = cities[i].name;
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.location_pick_city)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.location_pick_city), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         DefaultCities.City city = cities[which];
                         LocationPrefs.setManualCoords(SettingsActivity.this, city.lat, city.lon);
                         etLat.setText(formatCoord(city.lat));
                         etLon.setText(formatCoord(city.lon));
                         onLocationChanged();
                     }
-                })
-                .show();
+                });
     }
 
     private void saveManualLocation() {
@@ -242,16 +240,13 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void confirmDeleteZmanAlarm(final int id) {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.zman_alarm_delete_title)
-                .setPositiveButton(R.string.zman_alarm_delete, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.confirm(this, getString(R.string.zman_alarm_delete_title),
+                getString(R.string.zman_alarm_delete), getString(R.string.btn_cancel), new Runnable() {
+                    @Override public void run() {
                         ZmanAlarmStore.remove(SettingsActivity.this, id);
                         refreshZmanAlarmList();
                     }
-                })
-                .setNegativeButton(R.string.btn_cancel, null)
-                .show();
+                });
     }
 
     /** שלושה שלבים: איזה זמן -> כמה דקות לפני -> קבועה/חד-פעמית. */
@@ -262,14 +257,11 @@ public class SettingsActivity extends BaseActivity {
         }
         String[] labels = new String[ZmanimList.ALL.length];
         for (int i = 0; i < labels.length; i++) labels[i] = getString(ZmanimList.ALL[i].labelRes);
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.zman_alarm_pick_zman)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.zman_alarm_pick_zman), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         pickBefore(ZmanimList.ALL[which].key);
                     }
-                })
-                .show();
+                });
     }
 
     private void pickBefore(final String key) {
@@ -278,30 +270,24 @@ public class SettingsActivity extends BaseActivity {
             labels[i] = BEFORE_OPTIONS[i] == 0 ? getString(R.string.zman_alarm_before_0)
                     : getString(R.string.zman_alarm_before_n, BEFORE_OPTIONS[i]);
         }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.zman_alarm_pick_before)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.zman_alarm_pick_before), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         pickType(key, BEFORE_OPTIONS[which]);
                     }
-                })
-                .show();
+                });
     }
 
     private void pickType(final String key, final int before) {
         String[] labels = {getString(R.string.zman_alarm_type_repeat), getString(R.string.zman_alarm_type_once)};
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.zman_alarm_pick_type)
-                .setItems(labels, new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface d, int which) {
+        Dialogs.list(this, getString(R.string.zman_alarm_pick_type), labels, new Dialogs.OnChoose() {
+                    @Override public void onChoose(int which) {
                         boolean ok = ZmanAlarmStore.add(SettingsActivity.this, key, before, which == 0);
                         Toast.makeText(SettingsActivity.this,
                                 ok ? R.string.zman_alarm_added : R.string.zman_alarm_need_location,
                                 Toast.LENGTH_SHORT).show();
                         refreshZmanAlarmList();
                     }
-                })
-                .show();
+                });
     }
 
     // ------------------------------------------------------------------ ערכת נושא
@@ -349,56 +335,17 @@ public class SettingsActivity extends BaseActivity {
         });
     }
 
-    /**
-     * דיאלוג שעה שבנוי ידנית (NumberPicker) במקום TimePickerDialog של המערכת -
-     * כך שהמראה זהה בכל גרסאות אנדרואיד.
-     */
+    /** בורר השעה המקורי של המכשיר (גלילה תקינה במקשים). */
     private void showTimePickerDialog(final String type, final Button timeButton, final CheckBox checkBox) {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View content = inflater.inflate(R.layout.dialog_time_picker, null);
-
-        final NumberPicker pickerHour = (NumberPicker) content.findViewById(R.id.pickerHour);
-        final NumberPicker pickerMinute = (NumberPicker) content.findViewById(R.id.pickerMinute);
-        Button btnOk = (Button) content.findViewById(R.id.btnTimePickerOk);
-        Button btnCancel = (Button) content.findViewById(R.id.btnTimePickerCancel);
-
-        pickerHour.setMinValue(0);
-        pickerHour.setMaxValue(23);
-        pickerHour.setFormatter(new NumberPicker.Formatter() {
-            @Override public String format(int value) { return String.format(Locale.US, "%02d", value); }
-        });
-
-        pickerMinute.setMinValue(0);
-        pickerMinute.setMaxValue(59);
-        pickerMinute.setFormatter(new NumberPicker.Formatter() {
-            @Override public String format(int value) { return String.format(Locale.US, "%02d", value); }
-        });
-
-        int currentMinutes = AlarmScheduler.getMinutesOfDay(this, type);
-        pickerHour.setValue(currentMinutes / 60);
-        pickerMinute.setValue(currentMinutes % 60);
-
-        final AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(content)
-                .setCancelable(true)
-                .create();
-
-        btnCancel.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { dialog.dismiss(); }
-        });
-
-        btnOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int newMinutes = pickerHour.getValue() * 60 + pickerMinute.getValue();
+        int cur = AlarmScheduler.getMinutesOfDay(this, type);
+        int theme = ThemeUtil.isDarkMode(this) ? android.R.style.Theme_Holo_Dialog : android.R.style.Theme_Holo_Light_Dialog;
+        new android.app.TimePickerDialog(this, theme, new android.app.TimePickerDialog.OnTimeSetListener() {
+            @Override public void onTimeSet(android.widget.TimePicker view, int hour, int minute) {
+                int newMinutes = hour * 60 + minute;
                 timeButton.setText(formatMinutes(newMinutes) + " - " + getString(R.string.settings_set_time));
-                boolean isEnabled = checkBox.isChecked();
-                AlarmScheduler.setAlarm(SettingsActivity.this, type, isEnabled, newMinutes);
-                dialog.dismiss();
+                AlarmScheduler.setAlarm(SettingsActivity.this, type, checkBox.isChecked(), newMinutes);
             }
-        });
-
-        dialog.show();
+        }, cur / 60, cur % 60, true).show();
     }
 
     private String formatMinutes(int minutesOfDay) {

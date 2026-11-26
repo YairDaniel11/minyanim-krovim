@@ -66,8 +66,14 @@ public class ZmanimActivity extends BaseActivity {
         LayoutInflater inflater = getLayoutInflater();
         int mainColor = resolveAttrColor(R.attr.colorTextMain);
         int accentColor = resolveAttrColor(R.attr.m3Primary);
+        int nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+        int nextColor = resolveAttrColor(R.attr.colorNext);
+        boolean nextMarked = false;
         for (ZmanimList.Item item : ZmanimList.ALL) {
-            addZman(inflater, item.labelRes, ZmanimList.minutes(z, item.key), mainColor, accentColor);
+            int m = ZmanimList.minutes(z, item.key);
+            boolean isNext = !nextMarked && m >= 0 && m > nowMin;
+            if (isNext) nextMarked = true;
+            addZman(inflater, item.labelRes, m, isNext ? nextColor : mainColor, isNext ? nextColor : accentColor);
         }
     }
 
